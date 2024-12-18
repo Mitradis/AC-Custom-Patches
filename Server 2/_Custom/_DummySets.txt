@@ -1,0 +1,38 @@
+Cloth
+.additem 3558
+.additem 6478
+.additem 10637
+.additem 33232
+.additem 6659
+.additem 10657
+.additem 11936
+.additem 26015
+Leather
+.additem 5341
+.additem 5821
+.additem 28145
+.additem 33243
+.additem 4909
+.additem 16739
+.additem 15399
+.additem 26029
+Mail
+.learn 8737
+.additem 7336
+.additem 5320
+.additem 6481
+.additem 10743
+.additem 15203
+.additem 4123
+.additem 11229
+.additem 26041
+Plate
+.learn 750
+.additem 11195
+.additem 17688
+.additem 33256
+.additem 20640
+.additem 33258
+.additem 9531
+.additem 33255
+.additem 10746
