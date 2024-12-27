@@ -37,6 +37,19 @@ index e69de29..0000000
 diff --git a/modules/mod-eluna/sql/world/.gitkeep b/modules/mod-eluna/sql/world/.gitkeep
 deleted file mode 100644
 index e69de29..0000000
+diff --git a/modules/mod-eluna/src/LuaEngine/PlayerMethods.h b/modules/mod-eluna/src/LuaEngine/PlayerMethods.h
+index d34d0a4..b1f8051 100644
+--- a/modules/mod-eluna/src/LuaEngine/PlayerMethods.h
++++ b/modules/mod-eluna/src/LuaEngine/PlayerMethods.h
+@@ -3793,7 +3793,7 @@ namespace LuaPlayer
+     {
+         std::string msg = Eluna::CHECKVAL<std::string>(L, 2);
+         if (msg.length() > 0)
+-            player->GetSession()->SendAreaTriggerMessage("%s", msg.c_str());
++            player->GetSession()->SendAreaTriggerMessage("{}", msg.c_str());
+         return 0;
+     }
+ 
 diff --git a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
 index e921f38..73caaf5 100644
 --- a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
@@ -86,39 +99,10 @@ index e066d37..0000000
 -(@Entry, 'zhTW', @Name, '重置副本', 0),
 -(@entry, 'ruRU', @name, 'Перезапуск подземелий', 0);
 diff --git a/modules/mod-instance-reset/src/instance_reset.cpp b/modules/mod-instance-reset/src/instance_reset.cpp
-index 237f5a8..1ae5ac4 100644
+index 237f5a8..0dd5933 100644
 --- a/modules/mod-instance-reset/src/instance_reset.cpp
 +++ b/modules/mod-instance-reset/src/instance_reset.cpp
-@@ -66,7 +66,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
- {
-     ClearGossipMenuFor(player);
-     std::string gossipText = "";
--    std::string message = "";
- 
-     switch (player->GetSession()->GetSessionDbLocaleIndex())
-     {
-@@ -78,20 +77,17 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
-         case LOCALE_zhTW:
-         {
-             gossipText = "I would like to remove my instance saves.";
--            message = "Greetings $n. This is an npc that allows you to reset instance ids, allowing you to re-enter, without the need to wait for the reset time to expire. It was developed by the AzerothCore community.";
-             break;
-         }
-         case LOCALE_esES:
-         case LOCALE_esMX:
-         {
-             gossipText = "Me gustaría reiniciar mis ids de instancias.";
--            message = "Saludos $n. Este es un npc que te permite reiniciar los ids de las instancias, permitiéndote volver a entrar, sin la necesidad de esperar a que se cumpla el tiempo para el reinicio. Fue desarrollado por la comunidad de AzerothCore.";
-             break;
-         }
-         case LOCALE_ruRU:
-         {
-             gossipText = "Я бы хотел удалить мои сохраненные подземелья.";
--            message = "Приветствую, $n. Этот персонаж может удалить список посещенных подземелий, позволив Вам повторно их посетить не дожидаясь времени планового перезапуска. Разработан в AzerothCore community.";
-             break;
-         }
-         default:
-@@ -152,7 +148,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
+@@ -152,7 +152,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
          }
      }
  
@@ -126,6 +110,19 @@ index 237f5a8..1ae5ac4 100644
      SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
      return true;
  }
+diff --git a/modules/mod-instance-reset/src/instance_reset.h b/modules/mod-instance-reset/src/instance_reset.h
+index eaca59b..a53c20c 100644
+--- a/modules/mod-instance-reset/src/instance_reset.h
++++ b/modules/mod-instance-reset/src/instance_reset.h
+@@ -9,8 +9,6 @@
+ #include "WorldSession.h"
+ #include "Opcodes.h"
+ 
+-void GossipSetText(Player* player, std::string message, uint32 textID);
+-
+ bool enable = true;
+ uint8 transactionType = 0;
+ uint16 count = 26;
 diff --git a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp b/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
 index 9ee4acd..0609e6c 100644
 --- a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
@@ -282,9 +279,36 @@ index ab1743d..6f71487 100644
  #endif
  
 diff --git a/modules/mod-transmog/src/transmog_scripts.cpp b/modules/mod-transmog/src/transmog_scripts.cpp
-index 0916bc4..b65d295 100644
+index 33c616e..6970109 100644
 --- a/modules/mod-transmog/src/transmog_scripts.cpp
 +++ b/modules/mod-transmog/src/transmog_scripts.cpp
+@@ -443,7 +443,7 @@ void PerformTransmogrification (Player* player, uint32 itemEntry, uint32 cost)
+     }
+     TransmogAcoreStrings res = sT->Transmogrify(player, itemEntry, slot);
+     if (res == LANG_ERR_TRANSMOG_OK)
+-        session->SendAreaTriggerMessage("%s",GTS(LANG_ERR_TRANSMOG_OK));
++        session->SendAreaTriggerMessage("{}",GTS(LANG_ERR_TRANSMOG_OK));
+     else
+         ChatHandler(session).SendNotification(res);
+ }
+@@ -457,7 +457,7 @@ void RemoveTransmogrification (Player* player)
+         if (sT->GetFakeEntry(newItem->GetGUID()))
+         {
+             sT->DeleteFakeEntry(player, slot, newItem);
+-            session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
++            session->SendAreaTriggerMessage("{}", GTS(LANG_ERR_UNTRANSMOG_OK));
+         }
+         else
+             ChatHandler(session).SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
+@@ -564,7 +564,7 @@ public:
+                 }
+                 if (removed)
+                 {
+-                    session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
++                    session->SendAreaTriggerMessage("{}", GTS(LANG_ERR_UNTRANSMOG_OK));
+                     CharacterDatabase.CommitTransaction(trans);
+                 }
+                 else
 @@ -607,7 +607,7 @@ public:
                      if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, it->first))
                          sT->PresetTransmog(player, item, it->second, it->first);
@@ -315,7 +339,7 @@ index 0916bc4..b65d295 100644
              ChatHandler(player->GetSession()).SendNotification(LANG_PRESET_ERR_INVALID_NAME);
          else
          {
-@@ -1163,7 +1166,32 @@ public:
+@@ -1161,7 +1164,32 @@ public:
  
  #ifdef PRESETS
          if (sT->GetEnableSets())
@@ -349,7 +373,7 @@ index 0916bc4..b65d295 100644
  #endif
      }
  
-@@ -1247,7 +1275,7 @@ public:
+@@ -1245,7 +1273,7 @@ public:
  #ifdef PRESETS
          // Clean even if disabled
          // Dont delete even if player has more presets than should

@@ -9,8 +9,6 @@
 #include "WorldSession.h"
 #include "Opcodes.h"
 
-void GossipSetText(Player* player, std::string message, uint32 textID);
-
 bool enable = true;
 uint8 transactionType = 0;
 uint16 count = 26;

@@ -57,10 +57,38 @@ index 65f5ab5..8bff3ea 100644
      log(" ");
  }
 diff --git a/src/server/apps/worldserver/worldserver.conf.dist b/src/server/apps/worldserver/worldserver.conf.dist
-index 12fe7bb..5426bc7 100644
+index 0041bf4..37964e5 100644
 --- a/src/server/apps/worldserver/worldserver.conf.dist
 +++ b/src/server/apps/worldserver/worldserver.conf.dist
-@@ -2261,20 +2261,29 @@ SkillChance.SkinningSteps = 0
+@@ -2181,20 +2181,27 @@ ToggleXP.Cost = 100000
+ 
+ SpellQueue.Enabled = 1
+ 
+ #
+ #    SpellQueue.Window
+ #        Description: Time (in milliseconds) for spells to be queued.
+ #        Default:     400 - (400ms)
+ 
+ SpellQueue.Window = 400
+ 
++#
++#    MountCheckInterval
++#        Description: Time (in milliseconds) before apply mount camera height client fix
++#        Default:     50 - (50ms)
++
++MountCheckInterval = 50
++
+ #
+ ###################################################################################################
+ 
+ ###################################################################################################
+ # SKILL
+ #
+ #    MaxPrimaryTradeSkill
+ #        Description: Maximum number of primary professions a character can learn.
+ #        Range:       0-11
+ #        Default:     2
+@@ -2268,20 +2275,29 @@ SkillChance.SkinningSteps = 0
  
  #
  #    OffhandCheckAtSpellUnlearn
@@ -90,7 +118,7 @@ index 12fe7bb..5426bc7 100644
  #        Description: Enable or disable stats system limitations
  #        Default:     0 - Disabled
  #                     1 - Enabled
-@@ -2579,20 +2588,28 @@ Death.Bones.BattlegroundOrArena = 1
+@@ -2586,20 +2602,28 @@ Death.Bones.BattlegroundOrArena = 1
  ###################################################################################################
  # PET
  #
@@ -119,7 +147,7 @@ index 12fe7bb..5426bc7 100644
  #        Description: Item deletion behavior.
  #        Default:     0 - (Completely remove item from the database)
  #                     1 - (Save Item to database)
-@@ -2794,20 +2811,29 @@ Rate.RewardQuestMoney = 1
+@@ -2801,20 +2825,29 @@ Rate.RewardQuestMoney = 1
  #                     is at MaxPlayerLevel.
  #        Default:     1
  
@@ -149,7 +177,7 @@ index 12fe7bb..5426bc7 100644
  MonsterSight = 50.000000
  
  #
-@@ -4438,32 +4464,40 @@ MunchingBlizzlike.Enabled = 1
+@@ -4445,32 +4478,40 @@ MunchingBlizzlike.Enabled = 1
  
  Daze.Enabled = 1
  
@@ -249,10 +277,10 @@ index 82d8279..6f1cdd2 100644
  
      if (ZoneScript* zoneScript = me->GetZoneScript() ? me->GetZoneScript() : (ZoneScript*)me->GetInstanceScript())
 diff --git a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-index 0d2c96d..786eaea 100644
+index f922e77..b30e4de 100644
 --- a/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
 +++ b/src/server/game/AuctionHouse/AuctionHouseMgr.cpp
-@@ -286,20 +286,30 @@ uint32 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32
+@@ -113,20 +113,30 @@ uint32 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32
  
  //does not clear ram
  void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction, CharacterDatabaseTransaction trans, bool sendNotification, bool updateAchievementCriteria, bool sendMail)
@@ -274,16 +302,17 @@ index 0d2c96d..786eaea 100644
 +        return;
 +    }
      if (bidder)
-     {
          bidder_accId = bidder->GetSession()->GetAccountId();
-     }
      else
-     {
          bidder_accId = sCharacterCache->GetCharacterAccountIdByGuid(auction->bidder);
-     }
  
      // receiver exist
-@@ -665,21 +675,28 @@ void AuctionHouseObject::Update()
+     if (bidder || bidder_accId)
+     {
+         sScriptMgr->OnBeforeAuctionHouseMgrSendAuctionWonMail(this, auction, bidder, bidder_accId, sendNotification, updateAchievementCriteria, sendMail);
+         // set owner to bidder (to prevent delete item with sender char deleting)
+@@ -509,21 +519,21 @@ void AuctionHouseObject::Update()
+     if (_auctionsMap.empty())
          return;
  
      CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
@@ -293,15 +322,9 @@ index 0d2c96d..786eaea 100644
          itr = iter++;
          AuctionEntry* auction = (*itr).second;
  
-         if (auction->expire_time > checkTime)
-+        {
+-        if (auction->expire_time > checkTime)
++        if (auction->expire_time > checkTime || auction->owner.GetCounter() == 0)
              continue;
-+        }
-+        else if (auction->owner.GetCounter() == 0)
-+        {
-+            auction->expire_time = GameTime::GetGameTime().count() + 86400;
-+            continue;
-+        }
  
          ///- Either cancel the auction if there was no bidder
          if (!auction->bidder)
@@ -311,7 +334,33 @@ index 0d2c96d..786eaea 100644
          }
          ///- Or perform the transaction
          else
-         {
+diff --git a/src/server/game/AuctionHouse/AuctionHouseSearcher.cpp b/src/server/game/AuctionHouse/AuctionHouseSearcher.cpp
+index 0d50d7e..44cc234 100644
+--- a/src/server/game/AuctionHouse/AuctionHouseSearcher.cpp
++++ b/src/server/game/AuctionHouse/AuctionHouseSearcher.cpp
+@@ -446,21 +446,21 @@ void SearchableAuctionEntry::BuildAuctionInfo(WorldPacket& data) const
+     data << int32(item.randomPropertyId);                           // Random item property id
+     data << uint32(item.suffixFactor);                              // SuffixFactor
+     data << uint32(item.count);                                     // item->count
+     data << uint32(item.spellCharges);                              // item->charge FFFFFFF
+     data << uint32(0);                                              // item->flags (client doesnt do anything with it)
+     data << ownerGuid;                                              // Auction->owner
+     data << uint32(startbid);                                       // Auction->startbid (not sure if useful)
+     data << uint32(bid ? AuctionEntry::CalculateAuctionOutBid(bid) : 0);
+     // Minimal outbid
+     data << uint32(buyout);                                         // Auction->buyout
+-    data << uint32((expire_time - GameTime::GetGameTime().count()) * IN_MILLISECONDS); // time left
++    data << uint32((ownerGuid.GetCounter() == 0 ? 172800 : expire_time - GameTime::GetGameTime().count()) * IN_MILLISECONDS); // time left
+     data << bidderGuid;                                             // auction->bidder current
+     data << uint32(bid);                                            // current bid
+ }
+ 
+ void SearchableAuctionEntry::SetItemNames()
+ {
+     ItemTemplate const* proto = item.itemTemplate;
+     ItemLocale const* il = sObjectMgr->GetItemLocale(proto->ItemId);
+ 
+     for (uint32 locale = 0; locale < TOTAL_LOCALES; ++locale)
 diff --git a/src/server/game/Battlefield/Battlefield.cpp b/src/server/game/Battlefield/Battlefield.cpp
 index fe609ea..4a66477 100644
 --- a/src/server/game/Battlefield/Battlefield.cpp
@@ -970,7 +1019,7 @@ index 7abedca..7f9ca93 100644
      CreatureTemplate const* info = GetCreatureTemplate();
      if (!info)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index fa38de8..35a7cee 100644
+index dfed1d2..ccbed64 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -1286,24 +1286,20 @@ bool Player::IsClass(Classes unitClass, ClassContext context) const
@@ -1120,10 +1169,10 @@ index fa38de8..35a7cee 100644
      return result;
  }
 diff --git a/src/server/game/Entities/Player/PlayerQuest.cpp b/src/server/game/Entities/Player/PlayerQuest.cpp
-index ef2bbb9..83f7bb5 100644
+index 679c59c..d45d7c5 100644
 --- a/src/server/game/Entities/Player/PlayerQuest.cpp
 +++ b/src/server/game/Entities/Player/PlayerQuest.cpp
-@@ -795,33 +795,29 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
+@@ -796,33 +796,29 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
      {
          //- TODO: Poor design of mail system
          CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
@@ -1163,10 +1212,10 @@ index ef2bbb9..83f7bb5 100644
  
      // cast spells after mark quest complete (some spells have quest completed state requirements in spell_area data)
 diff --git a/src/server/game/Entities/Player/PlayerStorage.cpp b/src/server/game/Entities/Player/PlayerStorage.cpp
-index ce2f55c..4803319 100644
+index 8c7b9da..d977efa 100644
 --- a/src/server/game/Entities/Player/PlayerStorage.cpp
 +++ b/src/server/game/Entities/Player/PlayerStorage.cpp
-@@ -5306,24 +5306,20 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
+@@ -5305,24 +5305,20 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
      UpdatePositionData();
  
      SaveRecallPosition();
@@ -1191,7 +1240,7 @@ index ce2f55c..4803319 100644
  
      m_cinematic = fields[23].Get<uint8>();
      m_Played_time[PLAYED_TIME_TOTAL] = fields[24].Get<uint32>();
-@@ -6739,93 +6735,31 @@ bool Player::Satisfy(DungeonProgressionRequirements const* ar, uint32 target_map
+@@ -6738,93 +6734,31 @@ bool Player::Satisfy(DungeonProgressionRequirements const* ar, uint32 target_map
                  {
                      partyLeader = tempLeader;
                  }
@@ -1286,10 +1335,65 @@ index ce2f55c..4803319 100644
                  return true;
  
 diff --git a/src/server/game/Entities/Player/PlayerUpdates.cpp b/src/server/game/Entities/Player/PlayerUpdates.cpp
-index fc9eb75..ee48393 100644
+index 162b10d..04cf021 100644
 --- a/src/server/game/Entities/Player/PlayerUpdates.cpp
 +++ b/src/server/game/Entities/Player/PlayerUpdates.cpp
-@@ -389,20 +389,31 @@ void Player::Update(uint32 p_time)
+@@ -43,27 +43,54 @@
+ 
+ /// @todo: this import is not necessary for compilation and marked as unused by the IDE
+ //  however, for some reasons removing it would cause a damn linking issue
+ //  there is probably some underlying problem with imports which should properly addressed
+ //  see: https://github.com/azerothcore/azerothcore-wotlk/issues/9766
+ #include "GridNotifiersImpl.h"
+ 
+ // Zone Interval should be 1 second
+ constexpr auto ZONE_UPDATE_INTERVAL = 1000;
+ 
++int checkinterval = 50;
++bool mounted = false;
++
+ void Player::Update(uint32 p_time)
+ {
+     if (!IsInWorld())
+         return;
+ 
+     sScriptMgr->OnBeforePlayerUpdate(this, p_time);
+ 
++    if (IsMounted())
++    {
++        if (!mounted)
++        {
++            checkinterval -= p_time;
++            if (checkinterval <= 0)
++            {
++                SetObjectScale(GetObjectScale() + 0.0001);
++                checkinterval = sWorld->getIntConfig(CONFIG_MOUNT_CHECK_INTERVAL);
++                mounted = true;
++            }
++        }
++    }
++    else if (mounted)
++    {
++        checkinterval -= p_time;
++        if (checkinterval <= 0)
++        {
++            SetObjectScale(GetObjectScale() - 0.0001);
++            checkinterval = sWorld->getIntConfig(CONFIG_MOUNT_CHECK_INTERVAL);
++            mounted = false;
++        }
++    }
++
+     // undelivered mail
+     if (m_nextMailDelivereTime && m_nextMailDelivereTime <= GameTime::GetGameTime().count())
+     {
+         SendNewMail();
+         ++unReadMails;
+ 
+         // It will be recalculate at mailbox open (for unReadMails important
+         // non-0 until mailbox open, it also will be recalculated)
+         m_nextMailDelivereTime = time_t(0);
+     }
+@@ -389,20 +416,31 @@ void Player::Update(uint32 p_time)
  
      Pet* pet = GetPet();
      if (pet && !pet->IsWithinDistInMap(this, GetMap()->GetVisibilityRange()) &&
@@ -1322,7 +1426,7 @@ index fc9eb75..ee48393 100644
      else
          m_hostileReferenceCheckTimer -= p_time;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index c5cc5b8..9a30d5a 100644
+index 85fe37b..9986220 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -4240,21 +4240,21 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
@@ -1348,7 +1452,7 @@ index c5cc5b8..9a30d5a 100644
  }
  
  void Unit::ProcessTerrainStatusUpdate()
-@@ -10304,21 +10304,24 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
+@@ -10327,21 +10327,24 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
  
      // nobody can attack GM in GM-mode
      if (victim->IsPlayer())
@@ -1373,43 +1477,7 @@ index c5cc5b8..9a30d5a 100644
      if (HasUnattackableAura())
          RemoveAurasByType(SPELL_AURA_MOD_UNATTACKABLE);
  
-@@ -13519,32 +13522,32 @@ void Unit::Mount(uint32 mount, uint32 VehicleId, uint32 creatureEntry)
-     }
- 
-     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MOUNT);
- }
- 
- void Unit::Dismount()
- {
-     if (!IsMounted())
-         return;
- 
--    SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, 0);
--    RemoveUnitFlag(UNIT_FLAG_MOUNT);
--
-     if (Player* thisPlayer = ToPlayer())
-     {
-         WorldPacket data(SMSG_MOVE_SET_COLLISION_HGT, GetPackGUID().size() + 4 + 4);
-         data << GetPackGUID();
-         data << uint32(GameTime::GetGameTime().count());   // Packet counter
-         data << thisPlayer->GetCollisionHeight();
-         thisPlayer->GetSession()->SendPacket(&data);
-     }
- 
-+    SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, 0);
-+    RemoveUnitFlag(UNIT_FLAG_MOUNT);
-+
-     WorldPacket data(SMSG_DISMOUNT, 8);
-     data << GetPackGUID();
-     SendMessageToSet(&data, true);
- 
-     // dismount as a vehicle
-     if (IsPlayer() && GetVehicleKit())
-     {
-         // Send other players that we are no longer a vehicle
-         data.Initialize(SMSG_PLAYER_VEHICLE_DATA, 8 + 4);
-         data << GetPackGUID();
-@@ -14554,21 +14557,22 @@ void Unit::setDeathState(DeathState s, bool despawn)
+@@ -14577,21 +14580,22 @@ void Unit::setDeathState(DeathState s, bool despawn)
  {
      // death state needs to be updated before RemoveAllAurasOnDeath() calls HandleChannelDeathItem(..) so that
      // it can be used to check creation of death items (such as soul shards).
@@ -1461,10 +1529,10 @@ index 95f9314..013c6c4 100644
  
      do
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index 8520220..08d170d 100644
+index d450a3d..b99f1e0 100644
 --- a/src/server/game/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
-@@ -491,35 +491,42 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recvData)
+@@ -496,35 +496,42 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recvData)
          //buyout:
          if (player->GetGUID() == auction->bidder)
              player->ModifyMoney(-int32(auction->buyout - auction->bid));
@@ -1603,7 +1671,7 @@ index e6bb5dd..134738f 100644
  {
      Position pos = target->GetPosition();
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 7e70af2..e9f053b 100644
+index c3d8fac..243a27a 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -3109,25 +3109,21 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
@@ -1715,7 +1783,7 @@ index 7e70af2..e9f053b 100644
  
                                      return SPELL_FAILED_DONT_REPORT;
 diff --git a/src/server/game/World/IWorld.h b/src/server/game/World/IWorld.h
-index f0300c2..92761df 100644
+index ef64ee7..b6f08f7 100644
 --- a/src/server/game/World/IWorld.h
 +++ b/src/server/game/World/IWorld.h
 @@ -155,20 +155,21 @@ enum WorldBoolConfigs
@@ -1762,7 +1830,7 @@ index f0300c2..92761df 100644
      CONFIG_ARENA_WIN_RATING_MODIFIER_1,
      CONFIG_ARENA_WIN_RATING_MODIFIER_2,
      CONFIG_ARENA_LOSE_RATING_MODIFIER,
-@@ -414,20 +416,22 @@ enum WorldIntConfigs
+@@ -414,20 +416,23 @@ enum WorldIntConfigs
      CONFIG_NPC_REGEN_TIME_IF_NOT_REACHABLE_IN_RAID,
      CONFIG_FFA_PVP_TIMER,
      CONFIG_LOOT_NEED_BEFORE_GREED_ILVL_RESTRICTION,
@@ -1770,11 +1838,12 @@ index f0300c2..92761df 100644
      CONFIG_LFG_KICK_PREVENTION_TIMER,
      CONFIG_CHANGE_FACTION_MAX_MONEY,
      CONFIG_WATER_BREATH_TIMER,
-     CONFIG_AUCTION_HOUSE_SEARCH_TIMEOUT,
      CONFIG_DAILY_RBG_MIN_LEVEL_AP_REWARD,
+     CONFIG_AUCTIONHOUSE_WORKERTHREADS,
      CONFIG_SPELL_QUEUE_WINDOW,
 +    CONFIG_TRANSFER_COMBOPOINTS,
 +    CONFIG_THREAT_REDIRECT_PCT,
++    CONFIG_MOUNT_CHECK_INTERVAL,
      INT_CONFIG_VALUE_COUNT
  };
  
@@ -1786,10 +1855,10 @@ index f0300c2..92761df 100644
      RATE_POWER_RAGE_INCOME,
      RATE_POWER_RAGE_LOSS,
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 499cc01..5ee3dad 100644
+index e04627c..629fb52 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -684,20 +684,21 @@ void World::LoadConfigSettings(bool reload)
+@@ -689,20 +689,21 @@ void World::LoadConfigSettings(bool reload)
          _int_configs[CONFIG_PORT_WORLD] = sConfigMgr->GetOption<int32>("WorldServerPort", 8085);
  
      _bool_configs[CONFIG_CLOSE_IDLE_CONNECTIONS]   = sConfigMgr->GetOption<bool>("CloseIdleConnections", true);
@@ -1811,7 +1880,7 @@ index 499cc01..5ee3dad 100644
              LOG_ERROR("server.loading", "GameType option can't be changed at worldserver.conf reload, using current value ({}).", _int_configs[CONFIG_GAME_TYPE]);
      }
      else
-@@ -1181,20 +1182,21 @@ void World::LoadConfigSettings(bool reload)
+@@ -1186,20 +1187,21 @@ void World::LoadConfigSettings(bool reload)
      _bool_configs[CONFIG_ARENA_SEASON_IN_PROGRESS]                  = sConfigMgr->GetOption<bool>("Arena.ArenaSeason.InProgress", true);
      _float_configs[CONFIG_ARENA_WIN_RATING_MODIFIER_1]              = sConfigMgr->GetOption<float>("Arena.ArenaWinRatingModifier1", 48.0f);
      _float_configs[CONFIG_ARENA_WIN_RATING_MODIFIER_2]              = sConfigMgr->GetOption<float>("Arena.ArenaWinRatingModifier2", 24.0f);
@@ -1822,7 +1891,7 @@ index 499cc01..5ee3dad 100644
      _int_configs[CONFIG_ARENA_QUEUE_ANNOUNCER_DETAIL]               = sConfigMgr->GetOption<uint32>("Arena.QueueAnnouncer.Detail", 3);
  
      _bool_configs[CONFIG_OFFHAND_CHECK_AT_SPELL_UNLEARN]            = sConfigMgr->GetOption<bool>("OffhandCheckAtSpellUnlearn", true);
-+    _int_configs[CONFIG_TRANSFER_COMBOPOINTS]                       = sConfigMgr->GetOption<uint32>("TransferComboPoints", 1);
++    _int_configs[CONFIG_TRANSFER_COMBOPOINTS] = sConfigMgr->GetOption<uint32>("TransferComboPoints", 1);
      _int_configs[CONFIG_CREATURE_STOP_FOR_PLAYER]                   = sConfigMgr->GetOption<uint32>("Creature.MovingStopTimeForPlayer", 3 * MINUTE * IN_MILLISECONDS);
  
      _int_configs[CONFIG_WATER_BREATH_TIMER]                       = sConfigMgr->GetOption<uint32>("WaterBreath.Timer", 180000);
@@ -1833,9 +1902,7 @@ index 499cc01..5ee3dad 100644
      }
  
      if (int32 clientCacheId = sConfigMgr->GetOption<int32>("ClientCacheVersion", 0))
-@@ -1278,20 +1280,22 @@ void World::LoadConfigSettings(bool reload)
-     _bool_configs[CONFIG_ALLOW_JOIN_BG_AND_LFG] = sConfigMgr->GetOption<bool>("JoinBGAndLFG.Enable", false);
- 
+@@ -1285,20 +1287,22 @@ void World::LoadConfigSettings(bool reload)
      _bool_configs[CONFIG_LEAVE_GROUP_ON_LOGOUT] = sConfigMgr->GetOption<bool>("LeaveGroupOnLogout.Enabled", false);
  
      _bool_configs[CONFIG_QUEST_POI_ENABLED] = sConfigMgr->GetOption<bool>("QuestPOI.Enabled", true);
@@ -1844,19 +1911,21 @@ index 499cc01..5ee3dad 100644
  
      _bool_configs[CONFIG_ALLOWS_RANK_MOD_FOR_PET_HEALTH] = sConfigMgr->GetOption<bool>("Pet.RankMod.Health", true);
  
-+    _int_configs[CONFIG_THREAT_REDIRECT_PCT] = sConfigMgr->GetOption<uint32>("Pet.Threat.Redirect", 35);
-+
      _bool_configs[CONFIG_MUNCHING_BLIZZLIKE] = sConfigMgr->GetOption<bool>("MunchingBlizzlike.Enabled", true);
  
++    _int_configs[CONFIG_THREAT_REDIRECT_PCT] = sConfigMgr->GetOption<uint32>("Pet.Threat.Redirect", 35);
++
      _bool_configs[CONFIG_ENABLE_DAZE] = sConfigMgr->GetOption<bool>("Daze.Enabled", true);
  
      _int_configs[CONFIG_DAILY_RBG_MIN_LEVEL_AP_REWARD] = sConfigMgr->GetOption<uint32>("DailyRBGArenaPoints.MinLevel", 71);
  
-     _int_configs[CONFIG_AUCTION_HOUSE_SEARCH_TIMEOUT] = sConfigMgr->GetOption<uint32>("AuctionHouse.SearchTimeout", 1000);
- 
      ///- Read the "Data" directory from the config file
      std::string dataPath = sConfigMgr->GetOption<std::string>("DataDir", "./");
-@@ -1455,20 +1459,21 @@ void World::LoadConfigSettings(bool reload)
+     if (dataPath.empty() || (dataPath.at(dataPath.length() - 1) != '/' && dataPath.at(dataPath.length() - 1) != '\\'))
+         dataPath.push_back('/');
+ 
+ #if AC_PLATFORM == AC_PLATFORM_UNIX || AC_PLATFORM == AC_PLATFORM_APPLE
+@@ -1458,20 +1462,21 @@ void World::LoadConfigSettings(bool reload)
      _bool_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PORTAL_CHECK_ILVL]      = sConfigMgr->GetOption<bool>("DungeonAccessRequirements.PortalAvgIlevelCheck", false);
      _bool_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_LFG_DBC_LEVEL_OVERRIDE] = sConfigMgr->GetOption<bool>("DungeonAccessRequirements.LFGLevelDBCOverride", false);
      _int_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_OPTIONAL_STRING_ID]      = sConfigMgr->GetOption<int32>("DungeonAccessRequirements.OptionalStringID", 0);
@@ -1867,7 +1936,7 @@ index 499cc01..5ee3dad 100644
      //Debug
      _bool_configs[CONFIG_DEBUG_BATTLEGROUND] = sConfigMgr->GetOption<bool>("Debug.Battleground", false);
      _bool_configs[CONFIG_DEBUG_ARENA]        = sConfigMgr->GetOption<bool>("Debug.Arena",        false);
-+    _bool_configs[CONFIG_DEBUG_LFG]          = sConfigMgr->GetOption<bool>("Debug.LFG",          false);
++    _bool_configs[CONFIG_DEBUG_LFG] = sConfigMgr->GetOption<bool>("Debug.LFG", false);
  
      _int_configs[CONFIG_GM_LEVEL_CHANNEL_MODERATION] = sConfigMgr->GetOption<int32>("Channel.ModerationGMLevel", 1);
  
@@ -1878,6 +1947,29 @@ index 499cc01..5ee3dad 100644
  
      // LFG group mechanics.
      _int_configs[CONFIG_LFG_MAX_KICK_COUNT] = sConfigMgr->GetOption<int32>("LFG.MaxKickCount", 2);
+@@ -1491,20 +1496,22 @@ void World::LoadConfigSettings(bool reload)
+     // Realm Availability
+     _bool_configs[CONFIG_REALM_LOGIN_ENABLED] = sConfigMgr->GetOption<bool>("World.RealmAvailability", true);
+ 
+     // AH Worker threads
+     _int_configs[CONFIG_AUCTIONHOUSE_WORKERTHREADS] = sConfigMgr->GetOption<int32>("AuctionHouse.WorkerThreads", 1);
+ 
+     // SpellQueue
+     _bool_configs[CONFIG_SPELL_QUEUE_ENABLED] = sConfigMgr->GetOption<bool>("SpellQueue.Enabled", true);
+     _int_configs[CONFIG_SPELL_QUEUE_WINDOW] = sConfigMgr->GetOption<uint32>("SpellQueue.Window", 400);
+ 
++    _int_configs[CONFIG_MOUNT_CHECK_INTERVAL] = sConfigMgr->GetOption<uint32>("MountCheckInterval", 50);
++
+     // call ScriptMgr if we're reloading the configuration
+     sScriptMgr->OnAfterConfigLoad(reload);
+ }
+ 
+ /// Initialize the World
+ void World::SetInitialWorldSettings()
+ {
+     ///- Server startup begin
+     uint32 startupBegin = getMSTime();
+ 
 diff --git a/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/culling_of_stratholme.cpp b/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/culling_of_stratholme.cpp
 index 98b8839..4c1746c 100644
 --- a/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/culling_of_stratholme.cpp

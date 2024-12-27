@@ -66,6 +66,7 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
 {
     ClearGossipMenuFor(player);
     std::string gossipText = "";
+    std::string message = "";
 
     switch (player->GetSession()->GetSessionDbLocaleIndex())
     {
@@ -77,17 +78,20 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
         case LOCALE_zhTW:
         {
             gossipText = "I would like to remove my instance saves.";
+            message = "Greetings $n. This is an npc that allows you to reset instance ids, allowing you to re-enter, without the need to wait for the reset time to expire. It was developed by the AzerothCore community.";
             break;
         }
         case LOCALE_esES:
         case LOCALE_esMX:
         {
             gossipText = "Me gustaría reiniciar mis ids de instancias.";
+            message = "Saludos $n. Este es un npc que te permite reiniciar los ids de las instancias, permitiéndote volver a entrar, sin la necesidad de esperar a que se cumpla el tiempo para el reinicio. Fue desarrollado por la comunidad de AzerothCore.";
             break;
         }
         case LOCALE_ruRU:
         {
             gossipText = "Я бы хотел удалить мои сохраненные подземелья.";
+            message = "Приветствую, $n. Этот персонаж может удалить список посещенных подземелий, позволив Вам повторно их посетить не дожидаясь времени планового перезапуска. Разработан в AzerothCore community.";
             break;
         }
         default:

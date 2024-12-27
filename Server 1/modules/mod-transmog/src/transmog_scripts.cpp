@@ -443,7 +443,7 @@ void PerformTransmogrification (Player* player, uint32 itemEntry, uint32 cost)
     }
     TransmogAcoreStrings res = sT->Transmogrify(player, itemEntry, slot);
     if (res == LANG_ERR_TRANSMOG_OK)
-        session->SendAreaTriggerMessage("%s",GTS(LANG_ERR_TRANSMOG_OK));
+        session->SendAreaTriggerMessage("{}",GTS(LANG_ERR_TRANSMOG_OK));
     else
         ChatHandler(session).SendNotification(res);
 }
@@ -457,7 +457,7 @@ void RemoveTransmogrification (Player* player)
         if (sT->GetFakeEntry(newItem->GetGUID()))
         {
             sT->DeleteFakeEntry(player, slot, newItem);
-            session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
+            session->SendAreaTriggerMessage("{}", GTS(LANG_ERR_UNTRANSMOG_OK));
         }
         else
             ChatHandler(session).SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
@@ -564,7 +564,7 @@ public:
                 }
                 if (removed)
                 {
-                    session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
+                    session->SendAreaTriggerMessage("{}", GTS(LANG_ERR_UNTRANSMOG_OK));
                     CharacterDatabase.CommitTransaction(trans);
                 }
                 else
@@ -1159,7 +1159,6 @@ public:
                 accountId = player->GetSession()->GetAccountId();
 
             QueryResult resultAcc = LoginDatabase.Query("SELECT `membership_level`  FROM `acore_cms_subscriptions` WHERE `account_name` COLLATE utf8mb4_general_ci = (SELECT `username` FROM `account` WHERE `id` = {})", accountId);
-
             player->UpdatePlayerSetting("acore_cms_subscriptions", SETTING_TRANSMOG_MEMBERSHIP_LEVEL, resultAcc ? (*resultAcc)[0].Get<uint32>() : 0);
         }
 
