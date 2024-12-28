@@ -57,7 +57,7 @@ index 65f5ab5..8bff3ea 100644
      log(" ");
  }
 diff --git a/src/server/apps/worldserver/worldserver.conf.dist b/src/server/apps/worldserver/worldserver.conf.dist
-index 0041bf4..37964e5 100644
+index 0041bf4..f14a750 100644
 --- a/src/server/apps/worldserver/worldserver.conf.dist
 +++ b/src/server/apps/worldserver/worldserver.conf.dist
 @@ -2181,20 +2181,27 @@ ToggleXP.Cost = 100000
@@ -132,10 +132,10 @@ index 0041bf4..37964e5 100644
 +#
 +#    Pet.Threat.Redirect
 +#        Description: Redirect threat percent from player to pet if pet is alive
-+#        Default:     35 (0-99)
++#        Default:     40 (0-99)
 +#
 +
-+Pet.Threat.Redirect = 35
++Pet.Threat.Redirect = 40
 +
  #
  ###################################################################################################
@@ -177,7 +177,37 @@ index 0041bf4..37964e5 100644
  MonsterSight = 50.000000
  
  #
-@@ -4445,32 +4478,40 @@ MunchingBlizzlike.Enabled = 1
+@@ -3209,29 +3242,20 @@ Instance.SharedNormalHeroicId = 1
+ #    DungeonAccessRequirements.PrintMode
+ #
+ #        Description: Select the preferred format to display information to the player who cannot enter a portal dungeon because when has not met the access requirements:
+ #        Default:     1 - (Display only one requirement at a time (BlizzLike, like in the LFG interface))
+ #                     0 - (Display no extra information, only "Requirements  not met")
+ #                     2 - (Display detailed requirements, all at once, with clickable links)
+ #
+ 
+ DungeonAccessRequirements.PrintMode = 1
+ 
+-#
+-#    DungeonAccessRequirements.PortalAvgIlevelCheck
+-#
+-#        Description: Enable average item level requirement when entering a dungeon/raid's portal (= deny the entry if player has too low average ilevel, like in LFG).
+-#        Default:     0 - (Disabled  -> Blizzlike)
+-#                     1 - (Enabled)
+-
+-DungeonAccessRequirements.PortalAvgIlevelCheck = 0
+-
+ #
+ #    DungeonAccessRequirements.OptionalStringID
+ #
+ #        Description: Display an extra message from acore_strings in the chat after printing the dungeon access requirements.
+ #                     To enable it set the ID of your desired string from the table acore_strings
+ #        Default:     0 - (Disabled)
+ #                     1+ - (Enabled)
+ 
+ DungeonAccessRequirements.OptionalStringID = 0
+ 
+@@ -4445,32 +4469,40 @@ MunchingBlizzlike.Enabled = 1
  
  Daze.Enabled = 1
  
@@ -1783,10 +1813,10 @@ index c3d8fac..243a27a 100644
  
                                      return SPELL_FAILED_DONT_REPORT;
 diff --git a/src/server/game/World/IWorld.h b/src/server/game/World/IWorld.h
-index ef64ee7..b6f08f7 100644
+index ef64ee7..d149cd5 100644
 --- a/src/server/game/World/IWorld.h
 +++ b/src/server/game/World/IWorld.h
-@@ -155,20 +155,21 @@ enum WorldBoolConfigs
+@@ -155,21 +155,21 @@ enum WorldBoolConfigs
      CONFIG_CHECK_GOBJECT_LOS,
      CONFIG_CLOSE_IDLE_CONNECTIONS,
      CONFIG_LFG_LOCATION_ALL, // Player can join LFG anywhere
@@ -1797,8 +1827,8 @@ index ef64ee7..b6f08f7 100644
      CONFIG_SET_ALL_CREATURES_WITH_WAYPOINT_MOVEMENT_ACTIVE,
      CONFIG_DEBUG_BATTLEGROUND,
      CONFIG_DEBUG_ARENA,
+-    CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PORTAL_CHECK_ILVL,
 +    CONFIG_DEBUG_LFG,
-     CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PORTAL_CHECK_ILVL,
      CONFIG_DUNGEON_ACCESS_REQUIREMENTS_LFG_DBC_LEVEL_OVERRIDE,
      CONFIG_REGEN_HP_CANNOT_REACH_TARGET_IN_RAID,
      CONFIG_SET_BOP_ITEM_TRADEABLE,
@@ -1808,7 +1838,8 @@ index ef64ee7..b6f08f7 100644
      CONFIG_ALLOW_JOIN_BG_AND_LFG,
      CONFIG_MISS_CHANCE_MULTIPLIER_ONLY_FOR_PLAYERS,
      CONFIG_LEAVE_GROUP_ON_LOGOUT,
-@@ -184,20 +185,21 @@ enum WorldBoolConfigs
+     CONFIG_QUEST_POI_ENABLED,
+@@ -184,20 +184,21 @@ enum WorldBoolConfigs
      CONFIG_MUNCHING_BLIZZLIKE,
      CONFIG_ENABLE_DAZE,
      CONFIG_SPELL_QUEUE_ENABLED,
@@ -1830,7 +1861,7 @@ index ef64ee7..b6f08f7 100644
      CONFIG_ARENA_WIN_RATING_MODIFIER_1,
      CONFIG_ARENA_WIN_RATING_MODIFIER_2,
      CONFIG_ARENA_LOSE_RATING_MODIFIER,
-@@ -414,20 +416,23 @@ enum WorldIntConfigs
+@@ -414,20 +415,23 @@ enum WorldIntConfigs
      CONFIG_NPC_REGEN_TIME_IF_NOT_REACHABLE_IN_RAID,
      CONFIG_FFA_PVP_TIMER,
      CONFIG_LOOT_NEED_BEFORE_GREED_ILVL_RESTRICTION,
@@ -1855,7 +1886,7 @@ index ef64ee7..b6f08f7 100644
      RATE_POWER_RAGE_INCOME,
      RATE_POWER_RAGE_LOSS,
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e04627c..629fb52 100644
+index e04627c..02a65ea 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -689,20 +689,21 @@ void World::LoadConfigSettings(bool reload)
@@ -1925,8 +1956,18 @@ index e04627c..629fb52 100644
          dataPath.push_back('/');
  
  #if AC_PLATFORM == AC_PLATFORM_UNIX || AC_PLATFORM == AC_PLATFORM_APPLE
-@@ -1458,20 +1462,21 @@ void World::LoadConfigSettings(bool reload)
-     _bool_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PORTAL_CHECK_ILVL]      = sConfigMgr->GetOption<bool>("DungeonAccessRequirements.PortalAvgIlevelCheck", false);
+@@ -1448,30 +1452,30 @@ void World::LoadConfigSettings(bool reload)
+     _int_configs[CONFIG_BG_REWARD_WINNER_HONOR_FIRST] = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerHonorFirst", 30);
+     _int_configs[CONFIG_BG_REWARD_WINNER_ARENA_FIRST] = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerArenaFirst", 25);
+     _int_configs[CONFIG_BG_REWARD_WINNER_HONOR_LAST]  = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerHonorLast", 15);
+     _int_configs[CONFIG_BG_REWARD_WINNER_ARENA_LAST]  = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerArenaLast", 0);
+     _int_configs[CONFIG_BG_REWARD_LOSER_HONOR_FIRST]  = sConfigMgr->GetOption<int32>("Battleground.RewardLoserHonorFirst", 5);
+     _int_configs[CONFIG_BG_REWARD_LOSER_HONOR_LAST]   = sConfigMgr->GetOption<int32>("Battleground.RewardLoserHonorLast", 5);
+ 
+     _int_configs[CONFIG_WAYPOINT_MOVEMENT_STOP_TIME_FOR_PLAYER] = sConfigMgr->GetOption<int32>("WaypointMovementStopTimeForPlayer", 120);
+ 
+     _int_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PRINT_MODE]              = sConfigMgr->GetOption<int32>("DungeonAccessRequirements.PrintMode", 1);
+-    _bool_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_PORTAL_CHECK_ILVL]      = sConfigMgr->GetOption<bool>("DungeonAccessRequirements.PortalAvgIlevelCheck", false);
      _bool_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_LFG_DBC_LEVEL_OVERRIDE] = sConfigMgr->GetOption<bool>("DungeonAccessRequirements.LFGLevelDBCOverride", false);
      _int_configs[CONFIG_DUNGEON_ACCESS_REQUIREMENTS_OPTIONAL_STRING_ID]      = sConfigMgr->GetOption<int32>("DungeonAccessRequirements.OptionalStringID", 0);
      _int_configs[CONFIG_NPC_EVADE_IF_NOT_REACHABLE] = sConfigMgr->GetOption<int32>("NpcEvadeIfTargetIsUnreachable", 5);
@@ -1947,7 +1988,7 @@ index e04627c..629fb52 100644
  
      // LFG group mechanics.
      _int_configs[CONFIG_LFG_MAX_KICK_COUNT] = sConfigMgr->GetOption<int32>("LFG.MaxKickCount", 2);
-@@ -1491,20 +1496,22 @@ void World::LoadConfigSettings(bool reload)
+@@ -1491,20 +1495,22 @@ void World::LoadConfigSettings(bool reload)
      // Realm Availability
      _bool_configs[CONFIG_REALM_LOGIN_ENABLED] = sConfigMgr->GetOption<bool>("World.RealmAvailability", true);
  
