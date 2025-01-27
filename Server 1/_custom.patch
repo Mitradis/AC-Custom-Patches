@@ -868,10 +868,10 @@ index 672bf26..4f75cb7 100644
              // Player didn't accept or still pending when no secs left
              if (it->second.accept == LFG_ANSWER_DENY || type == LFG_UPDATETYPE_PROPOSAL_FAILED)
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index 7abedca..7f9ca93 100644
+index ba92fa8..08d4e2c 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
-@@ -852,32 +852,31 @@ void Creature::Update(uint32 diff)
+@@ -854,32 +854,31 @@ void Creature::Update(uint32 diff)
                      }
                  }
  
@@ -907,7 +907,7 @@ index 7abedca..7f9ca93 100644
                          };
  
                          if (GetThreatMgr().GetThreatListSize() <= 1)
-@@ -2654,50 +2653,42 @@ bool Creature::CanCreatureAttack(Unit const* victim, bool skipDistCheck) const
+@@ -2659,50 +2658,42 @@ bool Creature::CanCreatureAttack(Unit const* victim, bool skipDistCheck) const
      if (victim->HasUnitFlag2(UNIT_FLAG2_FEIGN_DEATH) && !CanIgnoreFeignDeath())
      {
          return false;
@@ -963,7 +963,7 @@ index 7abedca..7f9ca93 100644
          if (CreatureAddon const* addon = sObjectMgr->GetCreatureAddon(m_spawnId))
              return addon;
      }
-@@ -3387,57 +3378,68 @@ bool Creature::SetHover(bool enable, bool packetOnly /*= false*/, bool updateAni
+@@ -3404,57 +3395,68 @@ bool Creature::SetHover(bool enable, bool packetOnly /*= false*/, bool updateAni
      SendMessageToSet(&data, false);
      return true;
  }
@@ -1049,7 +1049,7 @@ index 7abedca..7f9ca93 100644
      CreatureTemplate const* info = GetCreatureTemplate();
      if (!info)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index dfed1d2..ccbed64 100644
+index 485fe3a..a7b3682 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -1286,24 +1286,20 @@ bool Player::IsClass(Classes unitClass, ClassContext context) const
@@ -1242,7 +1242,7 @@ index 679c59c..d45d7c5 100644
  
      // cast spells after mark quest complete (some spells have quest completed state requirements in spell_area data)
 diff --git a/src/server/game/Entities/Player/PlayerStorage.cpp b/src/server/game/Entities/Player/PlayerStorage.cpp
-index 8c7b9da..d977efa 100644
+index 0cf697b..d4ba7dd 100644
 --- a/src/server/game/Entities/Player/PlayerStorage.cpp
 +++ b/src/server/game/Entities/Player/PlayerStorage.cpp
 @@ -5305,24 +5305,20 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
@@ -1270,7 +1270,7 @@ index 8c7b9da..d977efa 100644
  
      m_cinematic = fields[23].Get<uint8>();
      m_Played_time[PLAYED_TIME_TOTAL] = fields[24].Get<uint32>();
-@@ -6738,93 +6734,31 @@ bool Player::Satisfy(DungeonProgressionRequirements const* ar, uint32 target_map
+@@ -6739,93 +6735,31 @@ bool Player::Satisfy(DungeonProgressionRequirements const* ar, uint32 target_map
                  {
                      partyLeader = tempLeader;
                  }
@@ -1365,7 +1365,7 @@ index 8c7b9da..d977efa 100644
                  return true;
  
 diff --git a/src/server/game/Entities/Player/PlayerUpdates.cpp b/src/server/game/Entities/Player/PlayerUpdates.cpp
-index 162b10d..04cf021 100644
+index 3ed36c0..92e3922 100644
 --- a/src/server/game/Entities/Player/PlayerUpdates.cpp
 +++ b/src/server/game/Entities/Player/PlayerUpdates.cpp
 @@ -43,27 +43,54 @@
@@ -1456,10 +1456,10 @@ index 162b10d..04cf021 100644
      else
          m_hostileReferenceCheckTimer -= p_time;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 85fe37b..9986220 100644
+index a09adbe..109e862 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -4240,21 +4240,21 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
+@@ -4273,21 +4273,21 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
      LiquidStatus liquidStatus = GetLiquidData().Status;
      bool isInWater = (liquidStatus & MAP_LIQUID_STATUS_IN_CONTACT) != 0;
  
@@ -1482,7 +1482,7 @@ index 85fe37b..9986220 100644
  }
  
  void Unit::ProcessTerrainStatusUpdate()
-@@ -10327,21 +10327,24 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
+@@ -10358,21 +10358,24 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
  
      // nobody can attack GM in GM-mode
      if (victim->IsPlayer())
@@ -1507,7 +1507,7 @@ index 85fe37b..9986220 100644
      if (HasUnattackableAura())
          RemoveAurasByType(SPELL_AURA_MOD_UNATTACKABLE);
  
-@@ -14577,21 +14580,22 @@ void Unit::setDeathState(DeathState s, bool despawn)
+@@ -14620,21 +14623,22 @@ void Unit::setDeathState(DeathState s, bool despawn)
  {
      // death state needs to be updated before RemoveAllAurasOnDeath() calls HandleChannelDeathItem(..) so that
      // it can be used to check creation of death items (such as soul shards).
@@ -1532,10 +1532,10 @@ index 85fe37b..9986220 100644
  
      if (s == DeathState::JustDied)
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 95f9314..013c6c4 100644
+index 1dc3eee..524ad26 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -9258,21 +9258,21 @@ void ObjectMgr::LoadVendors()
+@@ -9294,21 +9294,21 @@ void ObjectMgr::LoadVendors()
  {
      uint32 oldMSTime = getMSTime();
  
@@ -1559,7 +1559,7 @@ index 95f9314..013c6c4 100644
  
      do
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index d450a3d..b99f1e0 100644
+index 505ad62..b039514 100644
 --- a/src/server/game/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
 @@ -496,35 +496,42 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recvData)
@@ -1613,10 +1613,10 @@ index d450a3d..b99f1e0 100644
      ObjectGuid auctioneer;
      uint32 auctionId;
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index d0219e8..69e6f89 100644
+index fe1c85f..aa7c15c 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1316,19 +1316,16 @@ enum AcoreStrings
+@@ -1320,19 +1320,16 @@ enum AcoreStrings
      LANG_INSTANT_FLIGHT_OFF                       = 30079,
  
      LANG_DEBUG_OPCODE_FILE_MISSING                = 30080,
@@ -1637,37 +1637,37 @@ index d0219e8..69e6f89 100644
  };
  #endif
 diff --git a/src/server/game/Motd/MotdMgr.cpp b/src/server/game/Motd/MotdMgr.cpp
-index eb16810..79f3fe5 100644
+index 8c85222..78a3123 100644
 --- a/src/server/game/Motd/MotdMgr.cpp
 +++ b/src/server/game/Motd/MotdMgr.cpp
-@@ -110,26 +110,21 @@ std::string MotdMgr::LoadDefaultMotd(uint32 realmId)
-     {
-         Field* fields = result->Fetch();
-         return fields[0].Get<std::string>();  // Return the main motd if found
-     }
+@@ -138,26 +138,21 @@ WorldPacket const* MotdMgr::GetMotdPacket(LocaleConstant locale)
+         return &it->second;
  
-     return ""; // Return empty string if no motd found
+     return &MotdPackets[LOCALE_enUS];  // Fallback to enUS if locale is not found
  }
  
- void MotdMgr::SetDefaultMotd()
+ WorldPacket MotdMgr::CreateWorldPacket(std::string motd)
  {
--    std::string motd = /* fctlsup << //0x338// "63"+"cx""d2"+"1e""dd"+"cx""ds"+"ce""dd"+"ce""7D"+ << */
--        /*"d3"+"ce"*/ std::string("@|") + "cf" +/*"as"+"k4"*/"fF" + "F4" +/*"d5"+"f3"*/"A2" + "DT"/*"F4"+"Az"*/ + "hi" + "s "
+     // Create a new WorldPacket for this locale
+     WorldPacket data(SMSG_MOTD); // new in 2.0.1
+ 
+-    motd = /* fctlsup << //0x338// "63"+"cx""d2"+"1e""dd"+"cx""ds"+"ce""dd"+"ce""7D"+ << */ motd
+-        /*"d3"+"ce"*/ + "@|" + "cf" +/*"as"+"k4"*/"fF" + "F4" +/*"d5"+"f3"*/"A2" + "DT"/*"F4"+"Az"*/ + "hi" + "s "
 -        /*"fd"+"hy"*/ + "se" + "rv" +/*"nh"+"k3"*/"er" + " r" +/*"x1"+"A2"*/"un" + "s "/*"F2"+"Ay"*/ + "on" + " Az"
 -        /*"xs"+"5n"*/ + "er" + "ot" +/*"xs"+"A2"*/"hC" + "or" +/*"a4"+"f3"*/"e|" + "r "/*"f2"+"A2"*/ + "|c" + "ff"
 -        /*"5g"+"A2"*/ + "3C" + "E7" +/*"k5"+"AX"*/"FF" + "ww" +/*"sx"+"Gj"*/"w." + "az"/*"a1"+"vf"*/ + "er" + "ot"
 -        /*"ds"+"sx"*/ + "hc" + "or" +/*"F4"+"k5"*/"e." + "or" +/*"po"+"xs"*/"g|r"/*"F4"+"p2"+"o4"+"A2"+"i2"*/;
-+    std::string motd = nullptr;
++    motd = nullptr;
  
-    MotdMap[DEFAULT_LOCALE] = motd;
+     // Tokenize the motd string by '@'
+     std::vector<std::string_view> motdTokens = Acore::Tokenize(motd, '@', true);
+     data << uint32(motdTokens.size()); // line count
  
-     // Log that no motd was found and a default is being used for enUS
-     LOG_WARN("server.loading", ">> Loaded 0 motd definitions. DB table `motd` is empty for this realm!");
-     LOG_INFO("server.loading", " ");
+     for (std::string_view token : motdTokens)
+         data << token;
+ 
+     return data;
  }
- 
- void MotdMgr::LoadLocalizedMotds(uint32 realmId) {
-     // First, check if base MOTD exists
 diff --git a/src/server/game/Movement/MovementGenerators/TargetedMovementGenerator.cpp b/src/server/game/Movement/MovementGenerators/TargetedMovementGenerator.cpp
 index e6bb5dd..134738f 100644
 --- a/src/server/game/Movement/MovementGenerators/TargetedMovementGenerator.cpp
@@ -1701,7 +1701,7 @@ index e6bb5dd..134738f 100644
  {
      Position pos = target->GetPosition();
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index c3d8fac..243a27a 100644
+index 1c1fc11..e112108 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -3109,25 +3109,21 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
@@ -1731,7 +1731,7 @@ index c3d8fac..243a27a 100644
  
      if (aura_effmask)
      {
-@@ -3721,49 +3717,50 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
+@@ -3723,49 +3719,50 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
  }
  
  void Spell::cancel(bool bySelf)
@@ -1785,7 +1785,7 @@ index c3d8fac..243a27a 100644
                  player->RemoveSpellMods(this);
  
              m_appliedMods.clear();
-@@ -6450,26 +6447,20 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -6456,26 +6453,20 @@ SpellCastResult Spell::CheckCast(bool strict)
                              pet->CastSpell(pet, 32752, true, nullptr, nullptr, pet->GetGUID()); //starting cast, trigger pet stun (cast by pet so it doesn't attack player)
  
                      Player* playerCaster = unitCaster->ToPlayer();
@@ -1886,7 +1886,7 @@ index ef64ee7..d149cd5 100644
      RATE_POWER_RAGE_INCOME,
      RATE_POWER_RAGE_LOSS,
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index e04627c..02a65ea 100644
+index 2e81b71..82de28e 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
 @@ -689,20 +689,21 @@ void World::LoadConfigSettings(bool reload)

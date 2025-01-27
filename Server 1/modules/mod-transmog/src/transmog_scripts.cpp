@@ -485,7 +485,7 @@ public:
                 }
             }
 
-            return sTransmogrification->IsEnabled() && (target && !target->GetPlayerSetting("mod-transmog", SETTING_HIDE_TRANSMOG).value);
+            return sTransmogrification->IsEnabled() && (target && !target->GetPlayerSetting("mod-transmog", SETTING_HIDE_TRANSMOG).IsEnabled());
         }
     };
 
@@ -538,13 +538,18 @@ public:
         switch (sender)
         {
             case EQUIPMENT_SLOT_END: // Show items you can use
+            {
                 sT->selectionCache[player->GetGUID()] = action;
 
-                if (sT->GetUseVendorInterface())
+                bool useVendorInterface = player->GetPlayerSetting("mod-transmog", SETTING_VENDOR_INTERFACE).IsEnabled();
+
+                if (sT->GetUseVendorInterface() || useVendorInterface)
                     ShowTransmogItemsInFakeVendor(player, creature, action);
                 else
                     ShowTransmogItemsInGossipMenu(player, creature, action, sender);
+
                 break;
+            }
             case EQUIPMENT_SLOT_END + 1: // Main menu
                 OnGossipHello(player, creature);
                 break;

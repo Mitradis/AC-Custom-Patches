@@ -37,19 +37,6 @@ index e69de29..0000000
 diff --git a/modules/mod-eluna/sql/world/.gitkeep b/modules/mod-eluna/sql/world/.gitkeep
 deleted file mode 100644
 index e69de29..0000000
-diff --git a/modules/mod-eluna/src/LuaEngine/PlayerMethods.h b/modules/mod-eluna/src/LuaEngine/PlayerMethods.h
-index d34d0a4..b1f8051 100644
---- a/modules/mod-eluna/src/LuaEngine/PlayerMethods.h
-+++ b/modules/mod-eluna/src/LuaEngine/PlayerMethods.h
-@@ -3793,7 +3793,7 @@ namespace LuaPlayer
-     {
-         std::string msg = Eluna::CHECKVAL<std::string>(L, 2);
-         if (msg.length() > 0)
--            player->GetSession()->SendAreaTriggerMessage("%s", msg.c_str());
-+            player->GetSession()->SendAreaTriggerMessage("{}", msg.c_str());
-         return 0;
-     }
- 
 diff --git a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
 index e921f38..73caaf5 100644
 --- a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
@@ -266,10 +253,10 @@ index a9374d2..804cb9f 100644
          }
      }
 diff --git a/modules/mod-transmog/src/Transmogrification.h b/modules/mod-transmog/src/Transmogrification.h
-index ab1743d..6f71487 100644
+index 409e357..cc71c4a 100644
 --- a/modules/mod-transmog/src/Transmogrification.h
 +++ b/modules/mod-transmog/src/Transmogrification.h
-@@ -144,7 +144,7 @@ public:
+@@ -147,7 +147,7 @@ public:
      float GetSetCostModifier() const;
      int32 GetSetCopperCost() const;
  
@@ -279,37 +266,10 @@ index ab1743d..6f71487 100644
  #endif
  
 diff --git a/modules/mod-transmog/src/transmog_scripts.cpp b/modules/mod-transmog/src/transmog_scripts.cpp
-index 33c616e..6970109 100644
+index 612df3d..7f05048 100644
 --- a/modules/mod-transmog/src/transmog_scripts.cpp
 +++ b/modules/mod-transmog/src/transmog_scripts.cpp
-@@ -443,7 +443,7 @@ void PerformTransmogrification (Player* player, uint32 itemEntry, uint32 cost)
-     }
-     TransmogAcoreStrings res = sT->Transmogrify(player, itemEntry, slot);
-     if (res == LANG_ERR_TRANSMOG_OK)
--        session->SendAreaTriggerMessage("%s",GTS(LANG_ERR_TRANSMOG_OK));
-+        session->SendAreaTriggerMessage("{}",GTS(LANG_ERR_TRANSMOG_OK));
-     else
-         ChatHandler(session).SendNotification(res);
- }
-@@ -457,7 +457,7 @@ void RemoveTransmogrification (Player* player)
-         if (sT->GetFakeEntry(newItem->GetGUID()))
-         {
-             sT->DeleteFakeEntry(player, slot, newItem);
--            session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
-+            session->SendAreaTriggerMessage("{}", GTS(LANG_ERR_UNTRANSMOG_OK));
-         }
-         else
-             ChatHandler(session).SendNotification(LANG_ERR_UNTRANSMOG_NO_TRANSMOGS);
-@@ -564,7 +564,7 @@ public:
-                 }
-                 if (removed)
-                 {
--                    session->SendAreaTriggerMessage("%s", GTS(LANG_ERR_UNTRANSMOG_OK));
-+                    session->SendAreaTriggerMessage("{}", GTS(LANG_ERR_UNTRANSMOG_OK));
-                     CharacterDatabase.CommitTransaction(trans);
-                 }
-                 else
-@@ -607,7 +607,7 @@ public:
+@@ -612,7 +612,7 @@ public:
                      if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, it->first))
                          sT->PresetTransmog(player, item, it->second, it->first);
                  }
@@ -318,7 +278,7 @@ index 33c616e..6970109 100644
              } break;
              case EQUIPMENT_SLOT_END + 6: // view preset
              {
-@@ -621,7 +621,10 @@ public:
+@@ -626,7 +626,10 @@ public:
                      AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(it->second, 30, 30, -18, 0) + sT->GetItemLink(it->second, session), sender, action);
  
                  AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Statue_02:30:30:-18:0|t" + GetLocaleText(locale, "use_set"), EQUIPMENT_SLOT_END + 5, action, GetLocaleText(locale, "confirm_use_set") + sT->presetByName[player->GetGUID()][action], 0, false);
@@ -330,7 +290,7 @@ index 33c616e..6970109 100644
                  AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t" + GetLocaleText(locale, "back"), EQUIPMENT_SLOT_END + 4, 0);
                  SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
              } break;
-@@ -722,7 +725,7 @@ public:
+@@ -727,7 +730,7 @@ public:
              return true;
          }
          std::string name(code);
@@ -339,7 +299,7 @@ index 33c616e..6970109 100644
              ChatHandler(player->GetSession()).SendNotification(LANG_PRESET_ERR_INVALID_NAME);
          else
          {
-@@ -1161,7 +1164,32 @@ public:
+@@ -1166,7 +1169,32 @@ public:
  
  #ifdef PRESETS
          if (sT->GetEnableSets())
@@ -373,7 +333,7 @@ index 33c616e..6970109 100644
  #endif
      }
  
-@@ -1245,7 +1273,7 @@ public:
+@@ -1250,7 +1278,7 @@ public:
  #ifdef PRESETS
          // Clean even if disabled
          // Dont delete even if player has more presets than should
