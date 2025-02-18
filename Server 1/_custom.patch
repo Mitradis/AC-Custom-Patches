@@ -57,10 +57,10 @@ index 65f5ab5..8bff3ea 100644
      log(" ");
  }
 diff --git a/src/server/apps/worldserver/worldserver.conf.dist b/src/server/apps/worldserver/worldserver.conf.dist
-index 0041bf4..f14a750 100644
+index d0597bf..ff15a6d 100644
 --- a/src/server/apps/worldserver/worldserver.conf.dist
 +++ b/src/server/apps/worldserver/worldserver.conf.dist
-@@ -2181,20 +2181,27 @@ ToggleXP.Cost = 100000
+@@ -2182,20 +2182,27 @@ ToggleXP.Cost = 100000
  
  SpellQueue.Enabled = 1
  
@@ -88,7 +88,7 @@ index 0041bf4..f14a750 100644
  #        Description: Maximum number of primary professions a character can learn.
  #        Range:       0-11
  #        Default:     2
-@@ -2268,20 +2275,29 @@ SkillChance.SkinningSteps = 0
+@@ -2269,20 +2276,29 @@ SkillChance.SkinningSteps = 0
  
  #
  #    OffhandCheckAtSpellUnlearn
@@ -118,7 +118,7 @@ index 0041bf4..f14a750 100644
  #        Description: Enable or disable stats system limitations
  #        Default:     0 - Disabled
  #                     1 - Enabled
-@@ -2586,20 +2602,28 @@ Death.Bones.BattlegroundOrArena = 1
+@@ -2587,20 +2603,28 @@ Death.Bones.BattlegroundOrArena = 1
  ###################################################################################################
  # PET
  #
@@ -147,7 +147,7 @@ index 0041bf4..f14a750 100644
  #        Description: Item deletion behavior.
  #        Default:     0 - (Completely remove item from the database)
  #                     1 - (Save Item to database)
-@@ -2801,20 +2825,29 @@ Rate.RewardQuestMoney = 1
+@@ -2802,20 +2826,29 @@ Rate.RewardQuestMoney = 1
  #                     is at MaxPlayerLevel.
  #        Default:     1
  
@@ -177,7 +177,7 @@ index 0041bf4..f14a750 100644
  MonsterSight = 50.000000
  
  #
-@@ -3209,29 +3242,20 @@ Instance.SharedNormalHeroicId = 1
+@@ -3210,29 +3243,20 @@ Instance.SharedNormalHeroicId = 1
  #    DungeonAccessRequirements.PrintMode
  #
  #        Description: Select the preferred format to display information to the player who cannot enter a portal dungeon because when has not met the access requirements:
@@ -207,7 +207,7 @@ index 0041bf4..f14a750 100644
  
  DungeonAccessRequirements.OptionalStringID = 0
  
-@@ -4445,32 +4469,40 @@ MunchingBlizzlike.Enabled = 1
+@@ -4444,34 +4468,42 @@ MunchingBlizzlike.Enabled = 1
  
  Daze.Enabled = 1
  
@@ -246,10 +246,12 @@ index 0041bf4..f14a750 100644
  ###################################################################################################
  
  ###################################################################################################
- #                                                                                                 #
- # GAME SETTINGS END                                                                               #
- #                                                                                                 #
- ###################################################################################################
+ # DYNAMIC RESPAWN SETTINGS
+ #
+ #
+ #    Respawn.DynamicRateCreature
+ #        Description: Controls how creature respawn times adjust based on player count in a zone.
+ #                     The respawn time is unchanged up to the configured number of players.
 diff --git a/src/server/database/Database/DatabaseLoader.cpp b/src/server/database/Database/DatabaseLoader.cpp
 index 5ad77d3..4ec4012 100644
 --- a/src/server/database/Database/DatabaseLoader.cpp
@@ -392,10 +394,10 @@ index 0d50d7e..44cc234 100644
  
      for (uint32 locale = 0; locale < TOTAL_LOCALES; ++locale)
 diff --git a/src/server/game/Battlefield/Battlefield.cpp b/src/server/game/Battlefield/Battlefield.cpp
-index fe609ea..4a66477 100644
+index 0b25e18..aa104d5 100644
 --- a/src/server/game/Battlefield/Battlefield.cpp
 +++ b/src/server/game/Battlefield/Battlefield.cpp
-@@ -168,21 +168,20 @@ bool Battlefield::Update(uint32 diff)
+@@ -169,21 +169,20 @@ bool Battlefield::Update(uint32 diff)
          InvitePlayersInZoneToQueue();
          OnStartGrouping();
      }
@@ -418,10 +420,10 @@ index fe609ea..4a66477 100644
              for (int team = 0; team < 2; team++)
                  for (PlayerTimerMap::iterator itr = m_InvitedPlayers[team].begin(); itr != m_InvitedPlayers[team].end(); ++itr)
 diff --git a/src/server/game/Battlegrounds/Battleground.cpp b/src/server/game/Battlegrounds/Battleground.cpp
-index 454bb3e..a227300 100644
+index 1d87e34..c15311d 100644
 --- a/src/server/game/Battlegrounds/Battleground.cpp
 +++ b/src/server/game/Battlegrounds/Battleground.cpp
-@@ -485,40 +485,33 @@ inline void Battleground::_ProcessJoin(uint32 diff)
+@@ -489,40 +489,33 @@ inline void Battleground::_ProcessJoin(uint32 diff)
          // Setup here, only when at least one player has ported to the map
          if (!SetupBattleground())
          {
@@ -465,7 +467,7 @@ index 454bb3e..a227300 100644
                      DelObject(BG_BE_OBJECT_READY_MARKER_1);
                      DelObject(BG_BE_OBJECT_READY_MARKER_2);
 diff --git a/src/server/game/Battlegrounds/Battleground.h b/src/server/game/Battlegrounds/Battleground.h
-index 4ab13e9..4f249c5 100644
+index 2a9e85e..df3362b 100644
 --- a/src/server/game/Battlegrounds/Battleground.h
 +++ b/src/server/game/Battlegrounds/Battleground.h
 @@ -169,24 +169,24 @@ enum BattlegroundTimeIntervals
@@ -498,7 +500,7 @@ index 4ab13e9..4f249c5 100644
      BG_OBJECTID_REGENBUFF_ENTRY     = 179904,
      BG_OBJECTID_BERSERKERBUFF_ENTRY = 179905
 diff --git a/src/server/game/Battlegrounds/BattlegroundMgr.cpp b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
-index 4874cf1..9f68e71 100644
+index 46bac26..fb514af 100644
 --- a/src/server/game/Battlegrounds/BattlegroundMgr.cpp
 +++ b/src/server/game/Battlegrounds/BattlegroundMgr.cpp
 @@ -52,22 +52,22 @@
@@ -526,7 +528,7 @@ index 4874cf1..9f68e71 100644
  {
      DeleteAllBattlegrounds();
  }
-@@ -712,44 +712,28 @@ uint8 BattlegroundMgr::BGArenaType(BattlegroundQueueTypeId bgQueueTypeId)
+@@ -724,44 +724,28 @@ uint8 BattlegroundMgr::BGArenaType(BattlegroundQueueTypeId bgQueueTypeId)
          arenaType = BattlegroundMgr::QueueToArenaType.at(bgQueueTypeId);
      }
  
@@ -736,7 +738,7 @@ index c15e4d9..70c8f87 100644
      return false;
  }
 diff --git a/src/server/game/DungeonFinding/LFGMgr.cpp b/src/server/game/DungeonFinding/LFGMgr.cpp
-index 672bf26..4f75cb7 100644
+index 3752520..d6cb5b1 100644
 --- a/src/server/game/DungeonFinding/LFGMgr.cpp
 +++ b/src/server/game/DungeonFinding/LFGMgr.cpp
 @@ -35,21 +35,21 @@
@@ -763,7 +765,7 @@ index 672bf26..4f75cb7 100644
      LFGMgr::~LFGMgr()
      {
 @@ -415,76 +415,20 @@ namespace lfg
-             else if (DisableMgr::IsDisabledFor(DISABLE_TYPE_LFG_MAP, dungeon->map, player))
+             else if (sDisableMgr->IsDisabledFor(DISABLE_TYPE_LFG_MAP, dungeon->map, player))
                  lockData = LFG_LOCKSTATUS_RAID_LOCKED;
              else if (dungeon->difficulty > DUNGEON_DIFFICULTY_NORMAL && (!mapEntry || !mapEntry->IsRaid()) && sInstanceSaveMgr->PlayerIsPermBoundToInstance(player->GetGUID(), dungeon->map, Difficulty(dungeon->difficulty)))
                  lockData = LFG_LOCKSTATUS_RAID_LOCKED;
@@ -868,10 +870,10 @@ index 672bf26..4f75cb7 100644
              // Player didn't accept or still pending when no secs left
              if (it->second.accept == LFG_ANSWER_DENY || type == LFG_UPDATETYPE_PROPOSAL_FAILED)
 diff --git a/src/server/game/Entities/Creature/Creature.cpp b/src/server/game/Entities/Creature/Creature.cpp
-index ba92fa8..08d4e2c 100644
+index 9d62cfd..e4e6495 100644
 --- a/src/server/game/Entities/Creature/Creature.cpp
 +++ b/src/server/game/Entities/Creature/Creature.cpp
-@@ -854,32 +854,31 @@ void Creature::Update(uint32 diff)
+@@ -857,32 +857,31 @@ void Creature::Update(uint32 diff)
                      }
                  }
  
@@ -1049,10 +1051,10 @@ index ba92fa8..08d4e2c 100644
      CreatureTemplate const* info = GetCreatureTemplate();
      if (!info)
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 485fe3a..a7b3682 100644
+index b875c36..cd6fd1a 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1286,24 +1286,20 @@ bool Player::IsClass(Classes unitClass, ClassContext context) const
+@@ -1288,24 +1288,20 @@ bool Player::IsClass(Classes unitClass, ClassContext context) const
      Optional<bool> scriptResult = sScriptMgr->OnPlayerIsClass(this, unitClass, context);
      if (scriptResult != std::nullopt)
          return *scriptResult;
@@ -1077,12 +1079,12 @@ index 485fe3a..a7b3682 100644
  uint8 Player::GetChatTag() const
  {
      uint8 tag = CHAT_TAG_NONE;
-@@ -8844,22 +8840,20 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
-                 data << uint32(0x912) << uint32(0x0);           // 9
-                 data << uint32(0x915) << uint32(0x0);           // 10
+@@ -8851,22 +8847,20 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                  break;
          }
      }
+ 
+     sWorldState->FillInitialWorldStates(data, zoneid, areaid);
  
      uint16 length = (data.wpos() - countPos) / 8;
      data.put<uint16>(countPos, length);
@@ -1100,7 +1102,7 @@ index 485fe3a..a7b3682 100644
          if (bl && bl->HolidayWorldStateId)
          {
              if (BattlegroundMgr::IsBGWeekend((BattlegroundTypeId)bl->id))
-@@ -10929,21 +10923,21 @@ uint32 Player::GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const
+@@ -10936,21 +10930,21 @@ uint32 Player::GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot) const
              uint32 p_rating = GetArenaPersonalRating(i);
              uint32 t_rating = at->GetRating();
              p_rating = p_rating < t_rating ? p_rating : t_rating;
@@ -1109,7 +1111,7 @@ index 485fe3a..a7b3682 100644
          }
      }
  
-     sScriptMgr->OnGetMaxPersonalArenaRatingRequirement(this, minarenaslot, max_personal_rating);
+     sScriptMgr->OnPlayerGetMaxPersonalArenaRatingRequirement(this, minarenaslot, max_personal_rating);
  
 -    return max_personal_rating;
 +    return 3200;
@@ -1123,7 +1125,7 @@ index 485fe3a..a7b3682 100644
      int32 catrec = -1;
  
      // some special item spells without correct cooldown in SpellInfo
-@@ -11583,20 +11577,28 @@ Player* Player::GetSelectedPlayer() const
+@@ -11590,20 +11584,28 @@ Player* Player::GetSelectedPlayer() const
  
      return nullptr;
  }
@@ -1152,7 +1154,7 @@ index 485fe3a..a7b3682 100644
      {
          // never use SetGroup without a subgroup unless you specify nullptr for group
          ASSERT(subgroup >= 0);
-@@ -11695,20 +11697,22 @@ void Player::SendInitialPacketsAfterAddToMap()
+@@ -11702,20 +11704,22 @@ void Player::SendInitialPacketsAfterAddToMap()
          {
              AddAura(GetMountBlockId(), this);
              SetMountBlockId(0);
@@ -1175,8 +1177,8 @@ index 485fe3a..a7b3682 100644
          WorldPacket data2(SMSG_FORCE_MOVE_ROOT, 10);
          data2 << GetPackGUID();
          data2 << (uint32)2;
-@@ -16229,21 +16233,21 @@ void Player::SetArenaTeamInfoField(uint8 slot, ArenaTeamInfoType type, uint32 va
-     if (sScriptMgr->NotSetArenaTeamInfoField(this, slot, type, value))
+@@ -16230,21 +16234,21 @@ void Player::SetArenaTeamInfoField(uint8 slot, ArenaTeamInfoType type, uint32 va
+     if (sScriptMgr->OnPlayerNotSetArenaTeamInfoField(this, slot, type, value))
          SetUInt32Value(PLAYER_FIELD_ARENA_TEAM_INFO_1_1 + (slot * ARENA_TEAM_END) + type, value);
  }
  
@@ -1184,7 +1186,7 @@ index 485fe3a..a7b3682 100644
  {
      uint32 result = GetUInt32Value(PLAYER_FIELD_ARENA_TEAM_INFO_1_1 + (slot * ARENA_TEAM_END) + ARENA_TEAM_PERSONAL_RATING);
  
-     sScriptMgr->OnGetArenaPersonalRating(const_cast<Player*>(this), slot, result);
+     sScriptMgr->OnPlayerGetArenaPersonalRating(const_cast<Player*>(this), slot, result);
  
 -    return result;
 +    return 3200;
@@ -1194,12 +1196,12 @@ index 485fe3a..a7b3682 100644
  {
      uint32 result = GetUInt32Value(PLAYER_FIELD_ARENA_TEAM_INFO_1_1 + (slot * ARENA_TEAM_END) + ARENA_TEAM_ID);
  
-     sScriptMgr->OnGetArenaTeamId(const_cast<Player*>(this), slot, result);
+     sScriptMgr->OnPlayerGetArenaTeamId(const_cast<Player*>(this), slot, result);
  
      return result;
  }
 diff --git a/src/server/game/Entities/Player/PlayerQuest.cpp b/src/server/game/Entities/Player/PlayerQuest.cpp
-index 679c59c..d45d7c5 100644
+index 3dbb723..5c8e7d2 100644
 --- a/src/server/game/Entities/Player/PlayerQuest.cpp
 +++ b/src/server/game/Entities/Player/PlayerQuest.cpp
 @@ -796,33 +796,29 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver,
@@ -1242,7 +1244,7 @@ index 679c59c..d45d7c5 100644
  
      // cast spells after mark quest complete (some spells have quest completed state requirements in spell_area data)
 diff --git a/src/server/game/Entities/Player/PlayerStorage.cpp b/src/server/game/Entities/Player/PlayerStorage.cpp
-index 0cf697b..d4ba7dd 100644
+index 8de9e8a..3d27f35 100644
 --- a/src/server/game/Entities/Player/PlayerStorage.cpp
 +++ b/src/server/game/Entities/Player/PlayerStorage.cpp
 @@ -5305,24 +5305,20 @@ bool Player::LoadFromDB(ObjectGuid playerGuid, CharacterDatabaseQueryHolder cons
@@ -1361,11 +1363,11 @@ index 0cf697b..d4ba7dd 100644
              || missingPlayerItems.size() || missingPlayerQuests.size() || missingPlayerAchievements.size()
              || missingLeaderItems.size() || missingLeaderQuests.size() || missingLeaderAchievements.size())
          {
-             if (!sScriptMgr->NotAvoidSatisfy(partyLeader, ar, target_map, report))
+             if (!sScriptMgr->OnPlayerNotAvoidSatisfy(partyLeader, ar, target_map, report))
                  return true;
  
 diff --git a/src/server/game/Entities/Player/PlayerUpdates.cpp b/src/server/game/Entities/Player/PlayerUpdates.cpp
-index 3ed36c0..92e3922 100644
+index e2862ac..1f532cd 100644
 --- a/src/server/game/Entities/Player/PlayerUpdates.cpp
 +++ b/src/server/game/Entities/Player/PlayerUpdates.cpp
 @@ -43,27 +43,54 @@
@@ -1387,7 +1389,7 @@ index 3ed36c0..92e3922 100644
      if (!IsInWorld())
          return;
  
-     sScriptMgr->OnBeforePlayerUpdate(this, p_time);
+     sScriptMgr->OnPlayerBeforeUpdate(this, p_time);
  
 +    if (IsMounted())
 +    {
@@ -1456,10 +1458,10 @@ index 3ed36c0..92e3922 100644
      else
          m_hostileReferenceCheckTimer -= p_time;
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index a09adbe..109e862 100644
+index 60721d0..973b0f7 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
-@@ -4273,21 +4273,21 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
+@@ -4271,21 +4271,21 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
      LiquidStatus liquidStatus = GetLiquidData().Status;
      bool isInWater = (liquidStatus & MAP_LIQUID_STATUS_IN_CONTACT) != 0;
  
@@ -1482,7 +1484,7 @@ index a09adbe..109e862 100644
  }
  
  void Unit::ProcessTerrainStatusUpdate()
-@@ -10358,21 +10358,24 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
+@@ -10356,21 +10356,24 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
  
      // nobody can attack GM in GM-mode
      if (victim->IsPlayer())
@@ -1507,7 +1509,7 @@ index a09adbe..109e862 100644
      if (HasUnattackableAura())
          RemoveAurasByType(SPELL_AURA_MOD_UNATTACKABLE);
  
-@@ -14620,21 +14623,22 @@ void Unit::setDeathState(DeathState s, bool despawn)
+@@ -14617,21 +14620,22 @@ void Unit::setDeathState(DeathState s, bool despawn)
  {
      // death state needs to be updated before RemoveAllAurasOnDeath() calls HandleChannelDeathItem(..) so that
      // it can be used to check creation of death items (such as soul shards).
@@ -1532,10 +1534,10 @@ index a09adbe..109e862 100644
  
      if (s == DeathState::JustDied)
 diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
-index 1dc3eee..524ad26 100644
+index 9b04949..14ad020 100644
 --- a/src/server/game/Globals/ObjectMgr.cpp
 +++ b/src/server/game/Globals/ObjectMgr.cpp
-@@ -9294,21 +9294,21 @@ void ObjectMgr::LoadVendors()
+@@ -9295,21 +9295,21 @@ void ObjectMgr::LoadVendors()
  {
      uint32 oldMSTime = getMSTime();
  
@@ -1559,7 +1561,7 @@ index 1dc3eee..524ad26 100644
  
      do
 diff --git a/src/server/game/Handlers/AuctionHouseHandler.cpp b/src/server/game/Handlers/AuctionHouseHandler.cpp
-index 505ad62..b039514 100644
+index a3205df..ece8d2b 100644
 --- a/src/server/game/Handlers/AuctionHouseHandler.cpp
 +++ b/src/server/game/Handlers/AuctionHouseHandler.cpp
 @@ -496,35 +496,42 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recvData)
@@ -1613,10 +1615,10 @@ index 505ad62..b039514 100644
      ObjectGuid auctioneer;
      uint32 auctionId;
 diff --git a/src/server/game/Miscellaneous/Language.h b/src/server/game/Miscellaneous/Language.h
-index fe1c85f..aa7c15c 100644
+index 7de6253..09c1e6d 100644
 --- a/src/server/game/Miscellaneous/Language.h
 +++ b/src/server/game/Miscellaneous/Language.h
-@@ -1320,19 +1320,16 @@ enum AcoreStrings
+@@ -1319,19 +1319,16 @@ enum AcoreStrings
      LANG_INSTANT_FLIGHT_OFF                       = 30079,
  
      LANG_DEBUG_OPCODE_FILE_MISSING                = 30080,
@@ -1637,10 +1639,10 @@ index fe1c85f..aa7c15c 100644
  };
  #endif
 diff --git a/src/server/game/Motd/MotdMgr.cpp b/src/server/game/Motd/MotdMgr.cpp
-index 8c85222..78a3123 100644
+index 8c85222..5582c01 100644
 --- a/src/server/game/Motd/MotdMgr.cpp
 +++ b/src/server/game/Motd/MotdMgr.cpp
-@@ -138,26 +138,21 @@ WorldPacket const* MotdMgr::GetMotdPacket(LocaleConstant locale)
+@@ -138,26 +138,19 @@ WorldPacket const* MotdMgr::GetMotdPacket(LocaleConstant locale)
          return &it->second;
  
      return &MotdPackets[LOCALE_enUS];  // Fallback to enUS if locale is not found
@@ -1657,8 +1659,7 @@ index 8c85222..78a3123 100644
 -        /*"xs"+"5n"*/ + "er" + "ot" +/*"xs"+"A2"*/"hC" + "or" +/*"a4"+"f3"*/"e|" + "r "/*"f2"+"A2"*/ + "|c" + "ff"
 -        /*"5g"+"A2"*/ + "3C" + "E7" +/*"k5"+"AX"*/"FF" + "ww" +/*"sx"+"Gj"*/"w." + "az"/*"a1"+"vf"*/ + "er" + "ot"
 -        /*"ds"+"sx"*/ + "hc" + "or" +/*"F4"+"k5"*/"e." + "or" +/*"po"+"xs"*/"g|r"/*"F4"+"p2"+"o4"+"A2"+"i2"*/;
-+    motd = nullptr;
- 
+-
      // Tokenize the motd string by '@'
      std::vector<std::string_view> motdTokens = Acore::Tokenize(motd, '@', true);
      data << uint32(motdTokens.size()); // line count
@@ -1701,10 +1702,10 @@ index e6bb5dd..134738f 100644
  {
      Position pos = target->GetPosition();
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 1c1fc11..e112108 100644
+index e20def2..c086503 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
-@@ -3109,25 +3109,21 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
+@@ -3105,25 +3105,21 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
      {
          m_diminishLevel = unit->GetDiminishing(m_diminishGroup);
          DiminishingReturnsType type = GetDiminishingReturnsGroupType(m_diminishGroup);
@@ -1731,7 +1732,7 @@ index 1c1fc11..e112108 100644
  
      if (aura_effmask)
      {
-@@ -3723,49 +3719,50 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
+@@ -3719,49 +3715,50 @@ SpellCastResult Spell::prepare(SpellCastTargets const* targets, AuraEffect const
  }
  
  void Spell::cancel(bool bySelf)
@@ -1785,7 +1786,7 @@ index 1c1fc11..e112108 100644
                  player->RemoveSpellMods(this);
  
              m_appliedMods.clear();
-@@ -6456,26 +6453,20 @@ SpellCastResult Spell::CheckCast(bool strict)
+@@ -6452,26 +6449,20 @@ SpellCastResult Spell::CheckCast(bool strict)
                              pet->CastSpell(pet, 32752, true, nullptr, nullptr, pet->GetGUID()); //starting cast, trigger pet stun (cast by pet so it doesn't attack player)
  
                      Player* playerCaster = unitCaster->ToPlayer();
@@ -1813,10 +1814,10 @@ index 1c1fc11..e112108 100644
  
                                      return SPELL_FAILED_DONT_REPORT;
 diff --git a/src/server/game/World/IWorld.h b/src/server/game/World/IWorld.h
-index ef64ee7..d149cd5 100644
+index 10f69f3..f6d403a 100644
 --- a/src/server/game/World/IWorld.h
 +++ b/src/server/game/World/IWorld.h
-@@ -155,21 +155,21 @@ enum WorldBoolConfigs
+@@ -152,21 +152,21 @@ enum WorldBoolConfigs
      CONFIG_CHECK_GOBJECT_LOS,
      CONFIG_CLOSE_IDLE_CONNECTIONS,
      CONFIG_LFG_LOCATION_ALL, // Player can join LFG anywhere
@@ -1839,7 +1840,7 @@ index ef64ee7..d149cd5 100644
      CONFIG_MISS_CHANCE_MULTIPLIER_ONLY_FOR_PLAYERS,
      CONFIG_LEAVE_GROUP_ON_LOGOUT,
      CONFIG_QUEST_POI_ENABLED,
-@@ -184,20 +184,21 @@ enum WorldBoolConfigs
+@@ -181,20 +181,21 @@ enum WorldBoolConfigs
      CONFIG_MUNCHING_BLIZZLIKE,
      CONFIG_ENABLE_DAZE,
      CONFIG_SPELL_QUEUE_ENABLED,
@@ -1861,10 +1862,7 @@ index ef64ee7..d149cd5 100644
      CONFIG_ARENA_WIN_RATING_MODIFIER_1,
      CONFIG_ARENA_WIN_RATING_MODIFIER_2,
      CONFIG_ARENA_LOSE_RATING_MODIFIER,
-@@ -414,20 +415,23 @@ enum WorldIntConfigs
-     CONFIG_NPC_REGEN_TIME_IF_NOT_REACHABLE_IN_RAID,
-     CONFIG_FFA_PVP_TIMER,
-     CONFIG_LOOT_NEED_BEFORE_GREED_ILVL_RESTRICTION,
+@@ -415,20 +416,23 @@ enum WorldIntConfigs
      CONFIG_LFG_MAX_KICK_COUNT,
      CONFIG_LFG_KICK_PREVENTION_TIMER,
      CONFIG_CHANGE_FACTION_MAX_MONEY,
@@ -1872,6 +1870,9 @@ index ef64ee7..d149cd5 100644
      CONFIG_DAILY_RBG_MIN_LEVEL_AP_REWARD,
      CONFIG_AUCTIONHOUSE_WORKERTHREADS,
      CONFIG_SPELL_QUEUE_WINDOW,
+     CONFIG_SUNSREACH_COUNTER_MAX,
+     CONFIG_RESPAWN_DYNAMICMINIMUM_GAMEOBJECT,
+     CONFIG_RESPAWN_DYNAMICMINIMUM_CREATURE,
 +    CONFIG_TRANSFER_COMBOPOINTS,
 +    CONFIG_THREAT_REDIRECT_PCT,
 +    CONFIG_MOUNT_CHECK_INTERVAL,
@@ -1886,10 +1887,10 @@ index ef64ee7..d149cd5 100644
      RATE_POWER_RAGE_INCOME,
      RATE_POWER_RAGE_LOSS,
 diff --git a/src/server/game/World/World.cpp b/src/server/game/World/World.cpp
-index 2e81b71..82de28e 100644
+index 298184e..ac627f5 100644
 --- a/src/server/game/World/World.cpp
 +++ b/src/server/game/World/World.cpp
-@@ -689,20 +689,21 @@ void World::LoadConfigSettings(bool reload)
+@@ -443,20 +443,21 @@ void World::LoadConfigSettings(bool reload)
          _int_configs[CONFIG_PORT_WORLD] = sConfigMgr->GetOption<int32>("WorldServerPort", 8085);
  
      _bool_configs[CONFIG_CLOSE_IDLE_CONNECTIONS]   = sConfigMgr->GetOption<bool>("CloseIdleConnections", true);
@@ -1911,8 +1912,8 @@ index 2e81b71..82de28e 100644
              LOG_ERROR("server.loading", "GameType option can't be changed at worldserver.conf reload, using current value ({}).", _int_configs[CONFIG_GAME_TYPE]);
      }
      else
-@@ -1186,20 +1187,21 @@ void World::LoadConfigSettings(bool reload)
-     _bool_configs[CONFIG_ARENA_SEASON_IN_PROGRESS]                  = sConfigMgr->GetOption<bool>("Arena.ArenaSeason.InProgress", true);
+@@ -938,20 +939,21 @@ void World::LoadConfigSettings(bool reload)
+     _int_configs[CONFIG_ARENA_START_MATCHMAKER_RATING]              = sConfigMgr->GetOption<uint32>("Arena.ArenaStartMatchmakerRating", 1500);
      _float_configs[CONFIG_ARENA_WIN_RATING_MODIFIER_1]              = sConfigMgr->GetOption<float>("Arena.ArenaWinRatingModifier1", 48.0f);
      _float_configs[CONFIG_ARENA_WIN_RATING_MODIFIER_2]              = sConfigMgr->GetOption<float>("Arena.ArenaWinRatingModifier2", 24.0f);
      _float_configs[CONFIG_ARENA_LOSE_RATING_MODIFIER]               = sConfigMgr->GetOption<float>("Arena.ArenaLoseRatingModifier", 24.0f);
@@ -1933,7 +1934,7 @@ index 2e81b71..82de28e 100644
      }
  
      if (int32 clientCacheId = sConfigMgr->GetOption<int32>("ClientCacheVersion", 0))
-@@ -1285,20 +1287,22 @@ void World::LoadConfigSettings(bool reload)
+@@ -1037,20 +1039,22 @@ void World::LoadConfigSettings(bool reload)
      _bool_configs[CONFIG_LEAVE_GROUP_ON_LOGOUT] = sConfigMgr->GetOption<bool>("LeaveGroupOnLogout.Enabled", false);
  
      _bool_configs[CONFIG_QUEST_POI_ENABLED] = sConfigMgr->GetOption<bool>("QuestPOI.Enabled", true);
@@ -1950,13 +1951,13 @@ index 2e81b71..82de28e 100644
  
      _int_configs[CONFIG_DAILY_RBG_MIN_LEVEL_AP_REWARD] = sConfigMgr->GetOption<uint32>("DailyRBGArenaPoints.MinLevel", 71);
  
-     ///- Read the "Data" directory from the config file
-     std::string dataPath = sConfigMgr->GetOption<std::string>("DataDir", "./");
-     if (dataPath.empty() || (dataPath.at(dataPath.length() - 1) != '/' && dataPath.at(dataPath.length() - 1) != '\\'))
-         dataPath.push_back('/');
+     // Respawn
+     _float_configs[CONFIG_RESPAWN_DYNAMICRATE_CREATURE] = sConfigMgr->GetOption<float>("Respawn.DynamicRateCreature", 1.0f);
+     _int_configs[CONFIG_RESPAWN_DYNAMICMINIMUM_CREATURE] = sConfigMgr->GetOption<int32>("Respawn.DynamicMinimumCreature", 10);
  
- #if AC_PLATFORM == AC_PLATFORM_UNIX || AC_PLATFORM == AC_PLATFORM_APPLE
-@@ -1448,30 +1452,30 @@ void World::LoadConfigSettings(bool reload)
+     _float_configs[CONFIG_RESPAWN_DYNAMICRATE_GAMEOBJECT] = sConfigMgr->GetOption<float>("Respawn.DynamicRateGameObject", 1.0f);
+     _int_configs[CONFIG_RESPAWN_DYNAMICMINIMUM_GAMEOBJECT] = sConfigMgr->GetOption<int32>("Respawn.DynamicMinimumGameObject", 10);
+@@ -1207,30 +1211,30 @@ void World::LoadConfigSettings(bool reload)
      _int_configs[CONFIG_BG_REWARD_WINNER_HONOR_FIRST] = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerHonorFirst", 30);
      _int_configs[CONFIG_BG_REWARD_WINNER_ARENA_FIRST] = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerArenaFirst", 25);
      _int_configs[CONFIG_BG_REWARD_WINNER_HONOR_LAST]  = sConfigMgr->GetOption<int32>("Battleground.RewardWinnerHonorLast", 15);
@@ -1988,7 +1989,8 @@ index 2e81b71..82de28e 100644
  
      // LFG group mechanics.
      _int_configs[CONFIG_LFG_MAX_KICK_COUNT] = sConfigMgr->GetOption<int32>("LFG.MaxKickCount", 2);
-@@ -1491,20 +1495,22 @@ void World::LoadConfigSettings(bool reload)
+@@ -1249,20 +1253,21 @@ void World::LoadConfigSettings(bool reload)
+ 
      // Realm Availability
      _bool_configs[CONFIG_REALM_LOGIN_ENABLED] = sConfigMgr->GetOption<bool>("World.RealmAvailability", true);
  
@@ -1998,9 +2000,10 @@ index 2e81b71..82de28e 100644
      // SpellQueue
      _bool_configs[CONFIG_SPELL_QUEUE_ENABLED] = sConfigMgr->GetOption<bool>("SpellQueue.Enabled", true);
      _int_configs[CONFIG_SPELL_QUEUE_WINDOW] = sConfigMgr->GetOption<uint32>("SpellQueue.Window", 400);
- 
 +    _int_configs[CONFIG_MOUNT_CHECK_INTERVAL] = sConfigMgr->GetOption<uint32>("MountCheckInterval", 50);
-+
+ 
+     _int_configs[CONFIG_SUNSREACH_COUNTER_MAX] = sConfigMgr->GetOption<uint32>("Sunsreach.CounterMax", 10000);
+ 
      // call ScriptMgr if we're reloading the configuration
      sScriptMgr->OnAfterConfigLoad(reload);
  }
@@ -2008,9 +2011,6 @@ index 2e81b71..82de28e 100644
  /// Initialize the World
  void World::SetInitialWorldSettings()
  {
-     ///- Server startup begin
-     uint32 startupBegin = getMSTime();
- 
 diff --git a/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/culling_of_stratholme.cpp b/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/culling_of_stratholme.cpp
 index 98b8839..4c1746c 100644
 --- a/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/culling_of_stratholme.cpp
@@ -2255,10 +2255,10 @@ index 98b8839..4c1746c 100644
          }
      };
 diff --git a/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/instance_culling_of_stratholme.cpp b/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/instance_culling_of_stratholme.cpp
-index 9c37799..f00d2fd 100644
+index c6a1733..031318b 100644
 --- a/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/instance_culling_of_stratholme.cpp
 +++ b/src/server/scripts/Kalimdor/CavernsOfTime/CullingOfStratholme/instance_culling_of_stratholme.cpp
-@@ -217,29 +217,34 @@ public:
+@@ -215,28 +215,33 @@ public:
                      _loadTimer = 0;
                  }
              }
@@ -2270,7 +2270,6 @@ index 9c37799..f00d2fd 100644
                      if (!arthas->IsAlive())
                      {
 +                        arthas->SetVisible(false);
-                         EnsureGridLoaded();
                          arthas->setDeathState(DeathState::Dead);
                          arthas->Respawn();
 +                        arthas->SetVisible(true);

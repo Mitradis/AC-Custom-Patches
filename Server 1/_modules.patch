@@ -38,9 +38,18 @@ diff --git a/modules/mod-eluna/sql/world/.gitkeep b/modules/mod-eluna/sql/world/
 deleted file mode 100644
 index e69de29..0000000
 diff --git a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
-index e921f38..73caaf5 100644
+index e921f38..62474c7 100644
 --- a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
 +++ b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
+@@ -67,7 +67,7 @@ public:
+ 
+     GainHonorGuardAnnouce() : PlayerScript("GainHonorGuard") {}
+ 
+-    void OnLogin(Player* player) override 
++    void OnPlayerLogin(Player* player) override 
+     {
+ 
+         // Announce Module
 @@ -151,6 +151,7 @@ public:
  
          // add honor points to player
@@ -86,9 +95,18 @@ index e066d37..0000000
 -(@Entry, 'zhTW', @Name, '重置副本', 0),
 -(@entry, 'ruRU', @name, 'Перезапуск подземелий', 0);
 diff --git a/modules/mod-instance-reset/src/instance_reset.cpp b/modules/mod-instance-reset/src/instance_reset.cpp
-index 237f5a8..0dd5933 100644
+index 237f5a8..aa31fc8 100644
 --- a/modules/mod-instance-reset/src/instance_reset.cpp
 +++ b/modules/mod-instance-reset/src/instance_reset.cpp
+@@ -25,7 +25,7 @@ void GossipSetText(Player* player, std::string message, uint32 textID)
+     player->GetSession()->SendPacket(&data);
+ }
+ 
+-void InstanceResetAnnouncer::OnLogin(Player* player)
++void InstanceResetAnnouncer::OnPlayerLogin(Player* player)
+ {
+     if (sConfigMgr->GetOption<bool>("instanceReset.Announcer", true))
+     {
 @@ -152,7 +152,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
          }
      }
@@ -98,7 +116,7 @@ index 237f5a8..0dd5933 100644
      return true;
  }
 diff --git a/modules/mod-instance-reset/src/instance_reset.h b/modules/mod-instance-reset/src/instance_reset.h
-index eaca59b..a53c20c 100644
+index eaca59b..e9de8b4 100644
 --- a/modules/mod-instance-reset/src/instance_reset.h
 +++ b/modules/mod-instance-reset/src/instance_reset.h
 @@ -9,8 +9,6 @@
@@ -110,6 +128,15 @@ index eaca59b..a53c20c 100644
  bool enable = true;
  uint8 transactionType = 0;
  uint16 count = 26;
+@@ -22,7 +20,7 @@ class InstanceResetAnnouncer : public PlayerScript
+ public:
+     InstanceResetAnnouncer() : PlayerScript("InstanceResetAnnouncer") {}
+ 
+-    void OnLogin(Player* player) override;
++    void OnPlayerLogin(Player* player) override;
+ };
+ 
+ class InstanceReset : public CreatureScript
 diff --git a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp b/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
 index 9ee4acd..0609e6c 100644
 --- a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
@@ -161,10 +188,10 @@ index ec46c74..eec8e18 100644
  DELETE FROM `creature_template_model` WHERE `CreatureID` = @Entry;
  INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`) VALUES
 diff --git a/modules/mod-transmog/src/Transmogrification.cpp b/modules/mod-transmog/src/Transmogrification.cpp
-index a9374d2..804cb9f 100644
+index dc2003d..eac020d 100644
 --- a/modules/mod-transmog/src/Transmogrification.cpp
 +++ b/modules/mod-transmog/src/Transmogrification.cpp
-@@ -38,7 +38,7 @@ void Transmogrification::PresetTransmog(Player* player, Item* itemTransmogrified
+@@ -39,7 +39,7 @@ void Transmogrification::PresetTransmog(Player* player, Item* itemTransmogrified
      itemTransmogrified->ClearSoulboundTradeable(player);
  }
  
@@ -173,7 +200,7 @@ index a9374d2..804cb9f 100644
  {
      LOG_DEBUG("module", "Transmogrification::LoadPlayerSets");
  
-@@ -49,6 +49,44 @@ void Transmogrification::LoadPlayerSets(ObjectGuid pGUID)
+@@ -50,6 +50,44 @@ void Transmogrification::LoadPlayerSets(ObjectGuid pGUID)
  
      presetByName[pGUID].clear();
  
@@ -218,7 +245,7 @@ index a9374d2..804cb9f 100644
      QueryResult result = CharacterDatabase.Query("SELECT `PresetID`, `SetName`, `SetData` FROM `custom_transmogrification_sets` WHERE Owner = {}", pGUID.GetCounter());
      if (result)
      {
-@@ -1087,7 +1125,32 @@ void Transmogrification::LoadConfig(bool reload)
+@@ -1088,7 +1126,32 @@ void Transmogrification::LoadConfig(bool reload)
                  // skipping session check
                  UnloadPlayerSets(player->GetGUID());
                  if (GetEnableSets())
@@ -266,7 +293,7 @@ index 409e357..cc71c4a 100644
  #endif
  
 diff --git a/modules/mod-transmog/src/transmog_scripts.cpp b/modules/mod-transmog/src/transmog_scripts.cpp
-index 612df3d..7f05048 100644
+index b1c3f14..3cce5f2 100644
 --- a/modules/mod-transmog/src/transmog_scripts.cpp
 +++ b/modules/mod-transmog/src/transmog_scripts.cpp
 @@ -612,7 +612,7 @@ public:
@@ -376,7 +403,7 @@ index d779974..0000000
 -INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`) VALUES
 -(@NpcEntry, 0, @NpcDisplayID, 1, 1);
 diff --git a/modules/mod-weapon-visual/src/VisualWeapon.cpp b/modules/mod-weapon-visual/src/VisualWeapon.cpp
-index 1183c54..6416a23 100644
+index 1183c54..adc1874 100644
 --- a/modules/mod-weapon-visual/src/VisualWeapon.cpp
 +++ b/modules/mod-weapon-visual/src/VisualWeapon.cpp
 @@ -135,7 +135,6 @@ public:
@@ -387,3 +414,18 @@ index 1183c54..6416a23 100644
  
          player->PlayerTalkClass->SendGossipMenu(VIS_DEFAULT_MESSAGE, creature->GetGUID());
      }
+@@ -228,12 +227,12 @@ public:
+     }
+ 
+     // if Player has item in bag and re-equip it lets check for enchant
+-    void OnEquip(Player* player, Item* /*item*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
++    void OnPlayerEquip(Player* player, Item* /*item*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
+     {
+         GetVisual(player);
+     }
+ 
+-    void OnLogin(Player* player) override
++    void OnPlayerLogin(Player* player) override
+     {
+         GetVisual(player);
+ 
