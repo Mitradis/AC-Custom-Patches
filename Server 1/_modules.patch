@@ -1,0 +1,439 @@
+diff --git a/modules/mod-eluna/sql/README.md b/modules/mod-eluna/sql/README.md
+deleted file mode 100644
+index 3afd348..0000000
+--- a/modules/mod-eluna/sql/README.md
++++ /dev/null
+@@ -1,24 +0,0 @@
+-# BEST PRACTICES
+-
+-## Create a new table
+-
+-**Example:**
+-```
+-CREATE TABLE IF NOT EXISTS `table`(
+-  `id` int(11) unsigned NOT NULL,
+-  `active` BOOLEAN DEFAULT NULL,
+-  PRIMARY KEY (`id`)
+-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+-```
+-
+-**Boolean datatype in mysql:**
+-Use "TinyInt(1)"" or "Boolean" (this is the same thing)
+-
+-"bit(1)" can also work, but it may require a syntax like b'(0) and b'(1) when inserting (not sure).
+-
+-If there are multiple booleans in the same table, bit(1) is better, otherwise it's the same result.
+-
+-
+-## Resources
+-
+-https://www.w3schools.com/sql/sql_datatypes.asp
+diff --git a/modules/mod-eluna/sql/auth/.gitkeep b/modules/mod-eluna/sql/auth/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/modules/mod-eluna/sql/characters/.gitkeep b/modules/mod-eluna/sql/characters/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/modules/mod-eluna/sql/world/.gitkeep b/modules/mod-eluna/sql/world/.gitkeep
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
+index e921f38..62474c7 100644
+--- a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
++++ b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
+@@ -67,7 +67,7 @@ public:
+ 
+     GainHonorGuardAnnouce() : PlayerScript("GainHonorGuard") {}
+ 
+-    void OnLogin(Player* player) override 
++    void OnPlayerLogin(Player* player) override 
+     {
+ 
+         // Announce Module
+@@ -151,6 +151,7 @@ public:
+ 
+         // add honor points to player
+         player->ModifyHonorPoints(honor);
++        player->ModifyArenaPoints(honor / 5);
+ 
+         player->ApplyModUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, honor, true);
+ 
+diff --git a/modules/mod-instance-reset/data/sql/db-world/base/mod_instance_reset_2024_03_14.sql b/modules/mod-instance-reset/data/sql/db-world/base/mod_instance_reset_2024_03_14.sql
+deleted file mode 100644
+index e066d37..0000000
+--- a/modules/mod-instance-reset/data/sql/db-world/base/mod_instance_reset_2024_03_14.sql
++++ /dev/null
+@@ -1,30 +0,0 @@
+-
+-SET
+-@Entry      := 300000,
+-@Model      := 24877,
+-@Name       := "Cromi",
+-@Title      := "Instance Reset";
+-
+-DELETE FROM `creature_template` WHERE `entry` = @Entry;
+-
+-INSERT INTO `creature_template` (`entry`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `unit_class`, `unit_flags`, `type`, `type_flags`, `RegenHealth`, `flags_extra`, `ScriptName`) VALUES
+-(@Entry, @Name, @Title, "Speak", 0, 80, 80, 35, 0, 1, 1.14286, 1, 0, 1, 2, 7, 138936390, 1, 2, "instance_reset");
+-
+-DELETE FROM `creature_template_model` where creatureid=@Entry;
+-
+-INSERT INTO `creature_template_model` (CreatureID, Idx, CreatureDisplayID, DisplayScale, Probability, VerifiedBuild) VALUES
+-(@Entry, '0', @Model, '1', '1', NULL);
+-
+-UPDATE `creature_template` SET `npcflag`=`npcflag`|1, `flags_extra`=`flags_extra`|16777216 WHERE `entry`=@Entry;
+-
+-DELETE FROM `creature_template_locale` WHERE `entry`=@Entry;
+-
+-INSERT INTO `creature_template_locale` (`entry`, `locale`, `Name`, `Title`, `VerifiedBuild`) VALUES
+-(@Entry, 'esES', @Name, 'Reinicio de instancias', 0),
+-(@Entry, 'esMX', @Name, 'Reinicio de instancias', 0),
+-(@Entry, 'frFR', @Name, 'Redémarrage des instances', 0),
+-(@Entry, 'koKR', @Name, '인스턴스 재시작', 0),
+-(@Entry, 'deDE', @Name, 'Neustart der Instanz', 0),
+-(@Entry, 'zhCN', @Name, '重新启动实例', 0),
+-(@Entry, 'zhTW', @Name, '重置副本', 0),
+-(@entry, 'ruRU', @name, 'Перезапуск подземелий', 0);
+diff --git a/modules/mod-instance-reset/src/instance_reset.cpp b/modules/mod-instance-reset/src/instance_reset.cpp
+index d40babe..0b34647 100644
+--- a/modules/mod-instance-reset/src/instance_reset.cpp
++++ b/modules/mod-instance-reset/src/instance_reset.cpp
+@@ -5,25 +5,6 @@
+ * Without resorting to the database, since it is a module.
+ * And we want to avoid adding information that is not blizzlike.
+ */
+-void GossipSetText(Player* player, std::string message, uint32 textID)
+-{
+-    WorldPacket data(SMSG_NPC_TEXT_UPDATE, 100);
+-    data << textID;
+-    for (uint8 i = 0; i < MAX_GOSSIP_TEXT_OPTIONS; ++i)
+-    {
+-        data << float(0);
+-        data << message;
+-        data << message;
+-        data << uint32(0);
+-        data << uint32(0);
+-        data << uint32(0);
+-        data << uint32(0);
+-        data << uint32(0);
+-        data << uint32(0);
+-        data << uint32(0);
+-    }
+-    player->GetSession()->SendPacket(&data);
+-}
+ 
+ void InstanceResetAnnouncer::OnPlayerLogin(Player* player)
+ {
+@@ -152,7 +133,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
+         }
+     }
+ 
+-    GossipSetText(player, message, DEFAULT_GOSSIP_MESSAGE);
+     SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
+     return true;
+ }
+diff --git a/modules/mod-instance-reset/src/instance_reset.h b/modules/mod-instance-reset/src/instance_reset.h
+index 10ab5cb..e9de8b4 100644
+--- a/modules/mod-instance-reset/src/instance_reset.h
++++ b/modules/mod-instance-reset/src/instance_reset.h
+@@ -9,8 +9,6 @@
+ #include "WorldSession.h"
+ #include "Opcodes.h"
+ 
+-void GossipSetText(Player* player, std::string message, uint32 textID);
+-
+ bool enable = true;
+ uint8 transactionType = 0;
+ uint16 count = 26;
+diff --git a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp b/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
+index 9ee4acd..0609e6c 100644
+--- a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
++++ b/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
+@@ -137,12 +137,12 @@ void Azerothcore_skip_deathknight_HandleSkip(Player* player)
+ 
+     if (player->GetTeamId() == TEAM_ALLIANCE)
+     {
+-        player->TeleportTo(0, -8833.37f, 628.62f, 94.00f, 1.06f);//Stormwind
++        player->TeleportTo(0, -8448.027f, 341.4674f, 120.8858f, 5.4164f);//Stormwind
+         player->SetHomebind(Aloc, 1637);// Stormwind Homebind location
+     }
+     else
+     {
+-        player->TeleportTo(1, 1569.59f, -4397.63f, 7.70f, 0.54f);//Orgrimmar
++        player->TeleportTo(1, 1920.85f, -4136.924f, 40.5419f, 1.6752f);//Orgrimmar
+         player->SetHomebind(Hloc, 1653);// Orgrimmar Homebind location
+     }
+ 
+diff --git a/modules/mod-transmog/data/sql/db-world/trasm_world_NPC.sql b/modules/mod-transmog/data/sql/db-world/trasm_world_NPC.sql
+index ec46c74..eec8e18 100644
+--- a/modules/mod-transmog/data/sql/db-world/trasm_world_NPC.sql
++++ b/modules/mod-transmog/data/sql/db-world/trasm_world_NPC.sql
+@@ -1,10 +1,10 @@
+ SET
+ @Entry = 190010,
+-@Name = "Warpweaver";
++@Name = "Items Distorter";
+ DELETE FROM `creature_template` WHERE `entry` = @Entry;
+ 
+ INSERT INTO `creature_template` (`entry`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
+-(@Entry, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 1, 0, 0, 1, 0, 0, 'npc_transmogrifier');
++(@Entry, @Name, "", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 1, 0, 0, 1, 0, 0, 'npc_transmogrifier');
+ 
+ DELETE FROM `creature_template_model` WHERE `CreatureID` = @Entry;
+ INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`) VALUES
+@@ -23,11 +23,11 @@ INSERT INTO `creature_template_locale` (`entry`, `locale`, `Name`, `Title`) VALU
+ 
+ SET
+ @Entry = 190011,
+-@Name = "Ethereal Warpweaver";
++@Name = "Items Distorter";
+ DELETE FROM `creature_template` WHERE `entry` = @Entry;
+ 
+ INSERT INTO `creature_template` (`entry`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`, `faction`, `npcflag`, `scale`, `rank`, `dmgschool`, `baseattacktime`, `rangeattacktime`, `unit_class`, `unit_flags`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `AIName`, `MovementType`, `HoverHeight`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`) VALUES
+-(@Entry, @Name, "Transmogrifier", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 1, 0, 0, 1, 0, 0, 'npc_transmogrifier');
++(@Entry, @Name, "", NULL, 0, 80, 80, 2, 35, 1, 1, 0, 0, 2000, 0, 1, 0, 7, 138936390, 0, 0, 0, '', 0, 1, 0, 0, 1, 0, 0, 'npc_transmogrifier');
+ 
+ DELETE FROM `creature_template_model` WHERE `CreatureID` = @Entry;
+ INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`, `VerifiedBuild`) VALUES
+diff --git a/modules/mod-transmog/src/Transmogrification.cpp b/modules/mod-transmog/src/Transmogrification.cpp
+index dc2003d..eac020d 100644
+--- a/modules/mod-transmog/src/Transmogrification.cpp
++++ b/modules/mod-transmog/src/Transmogrification.cpp
+@@ -39,7 +39,7 @@ void Transmogrification::PresetTransmog(Player* player, Item* itemTransmogrified
+     itemTransmogrified->ClearSoulboundTradeable(player);
+ }
+ 
+-void Transmogrification::LoadPlayerSets(ObjectGuid pGUID)
++void Transmogrification::LoadPlayerSets(ObjectGuid pGUID, int pclass)
+ {
+     LOG_DEBUG("module", "Transmogrification::LoadPlayerSets");
+ 
+@@ -50,6 +50,44 @@ void Transmogrification::LoadPlayerSets(ObjectGuid pGUID)
+ 
+     presetByName[pGUID].clear();
+ 
++    QueryResult serversets = CharacterDatabase.Query("SELECT `PresetID`, `SetName`, `SetData` FROM `custom_transmogrification_sets` WHERE Owner = 19001{}", pclass);
++    if (serversets)
++    {
++        do
++        {
++            uint8 PresetID = (*serversets)[0].Get<uint8>();
++            std::string SetName = (*serversets)[1].Get<std::string>();
++            std::istringstream SetData((*serversets)[2].Get<std::string>());
++            while (SetData.good())
++            {
++                uint32 slot;
++                uint32 entry;
++                SetData >> slot >> entry;
++                if (SetData.fail())
++                    break;
++                if (slot >= EQUIPMENT_SLOT_END)
++                {
++                    LOG_ERROR("module", "Item entry (FakeEntry: {}, class preset: 19001{}, slot: {}, presetId: {}) has invalid slot, ignoring.", entry, pclass, slot, PresetID);
++                    continue;
++                }
++                if (entry == HIDDEN_ITEM_ID || sObjectMgr->GetItemTemplate(entry))
++                    presetById[pGUID][PresetID][slot] = entry; // Transmogrification::Preset(presetName, fakeEntry);
++            }
++
++            if (!presetById[pGUID][PresetID].empty())
++            {
++                presetByName[pGUID][PresetID] = SetName;
++                // load all presets anyways
++                //if (presetByName[pGUID].size() >= GetMaxSets())
++                //    break;
++            }
++            else // should be deleted on startup, so  this never runs (shouldnt..)
++            {
++                LOG_ERROR("module", "Empty class preset: 19001{}, presetId: {}.", pclass, PresetID);
++            }
++        } while (serversets->NextRow());
++    }
++
+     QueryResult result = CharacterDatabase.Query("SELECT `PresetID`, `SetName`, `SetData` FROM `custom_transmogrification_sets` WHERE Owner = {}", pGUID.GetCounter());
+     if (result)
+     {
+@@ -1088,7 +1126,32 @@ void Transmogrification::LoadConfig(bool reload)
+                 // skipping session check
+                 UnloadPlayerSets(player->GetGUID());
+                 if (GetEnableSets())
+-                    LoadPlayerSets(player->GetGUID());
++                {
++                    int pclass = -1;
++                    int sclass = player->getClass();
++                    if (sclass == 6)
++                        pclass = 0;
++                    else if (sclass == 11)
++                        pclass = 1;
++                    else if (sclass == 3)
++                        pclass = 2;
++                    else if (sclass == 8)
++                        pclass = 3;
++                    else if (sclass == 2)
++                        pclass = 4;
++                    else if (sclass == 5)
++                        pclass = 5;
++                    else if (sclass == 4)
++                        pclass = 6;
++                    else if (sclass == 7)
++                        pclass = 7;
++                    else if (sclass == 9)
++                        pclass = 8;
++                    else if (sclass == 1)
++                        pclass = 9;
++
++                    LoadPlayerSets(player->GetGUID(), pclass);
++                }
+             }
+         }
+     }
+diff --git a/modules/mod-transmog/src/Transmogrification.h b/modules/mod-transmog/src/Transmogrification.h
+index 409e357..cc71c4a 100644
+--- a/modules/mod-transmog/src/Transmogrification.h
++++ b/modules/mod-transmog/src/Transmogrification.h
+@@ -147,7 +147,7 @@ public:
+     float GetSetCostModifier() const;
+     int32 GetSetCopperCost() const;
+ 
+-    void LoadPlayerSets(ObjectGuid pGUID);
++    void LoadPlayerSets(ObjectGuid pGUID, int pclass);
+     void UnloadPlayerSets(ObjectGuid pGUID);
+ #endif
+ 
+diff --git a/modules/mod-transmog/src/transmog_scripts.cpp b/modules/mod-transmog/src/transmog_scripts.cpp
+index 8db315d..533d19e 100644
+--- a/modules/mod-transmog/src/transmog_scripts.cpp
++++ b/modules/mod-transmog/src/transmog_scripts.cpp
+@@ -612,7 +612,7 @@ public:
+                     if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, it->first))
+                         sT->PresetTransmog(player, item, it->second, it->first);
+                 }
+-                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 6, action);
++                OnGossipSelect(player, creature, EQUIPMENT_SLOT_END + 4, 0);
+             } break;
+             case EQUIPMENT_SLOT_END + 6: // view preset
+             {
+@@ -626,7 +626,10 @@ public:
+                     AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, sT->GetItemIcon(it->second, 30, 30, -18, 0) + sT->GetItemLink(it->second, session), sender, action);
+ 
+                 AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Statue_02:30:30:-18:0|t" + GetLocaleText(locale, "use_set"), EQUIPMENT_SLOT_END + 5, action, GetLocaleText(locale, "confirm_use_set") + sT->presetByName[player->GetGUID()][action], 0, false);
+-                AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-LeaveItem-Opaque:30:30:-18:0|t" + GetLocaleText(locale, "delete_set"), EQUIPMENT_SLOT_END + 7, action, GetLocaleText(locale, "confirm_delete_set") + sT->presetByName[player->GetGUID()][action] + "?", 0, false);
++                if (!sT->presetByName[player->GetGUID()][action].starts_with("-"))
++                {
++                    AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/PaperDollInfoFrame/UI-GearManager-LeaveItem-Opaque:30:30:-18:0|t" + GetLocaleText(locale, "delete_set"), EQUIPMENT_SLOT_END + 7, action, GetLocaleText(locale, "confirm_delete_set") + sT->presetByName[player->GetGUID()][action] + "?", 0, false);
++                }
+                 AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t" + GetLocaleText(locale, "back"), EQUIPMENT_SLOT_END + 4, 0);
+                 SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
+             } break;
+@@ -727,7 +730,7 @@ public:
+             return true;
+         }
+         std::string name(code);
+-        if (name.find('"') != std::string::npos || name.find('\\') != std::string::npos)
++        if (name.find('"') != std::string::npos || name.find('\\') != std::string::npos || name.starts_with("-"))
+             ChatHandler(player->GetSession()).SendNotification(LANG_PRESET_ERR_INVALID_NAME);
+         else
+         {
+@@ -1177,7 +1180,32 @@ public:
+ 
+ #ifdef PRESETS
+         if (sT->GetEnableSets())
+-            sT->LoadPlayerSets(playerGUID);
++        {
++            int pclass = -1;
++            int sclass = player->getClass();
++            if (sclass == 6)
++                pclass = 0;
++            else if (sclass == 11)
++                pclass = 1;
++            else if (sclass == 3)
++                pclass = 2;
++            else if (sclass == 8)
++                pclass = 3;
++            else if (sclass == 2)
++                pclass = 4;
++            else if (sclass == 5)
++                pclass = 5;
++            else if (sclass == 4)
++                pclass = 6;
++            else if (sclass == 7)
++                pclass = 7;
++            else if (sclass == 9)
++                pclass = 8;
++            else if (sclass == 1)
++                pclass = 9;
++
++            sT->LoadPlayerSets(playerGUID, pclass);
++        }
+ #endif
+     }
+ 
+@@ -1264,7 +1292,7 @@ public:
+ #ifdef PRESETS
+         // Clean even if disabled
+         // Dont delete even if player has more presets than should
+-        CharacterDatabase.Execute("DELETE FROM `custom_transmogrification_sets` WHERE NOT EXISTS(SELECT 1 FROM characters WHERE characters.guid = custom_transmogrification_sets.Owner)");
++        CharacterDatabase.Execute("DELETE FROM `custom_transmogrification_sets` WHERE NOT EXISTS(SELECT 1 FROM characters WHERE characters.guid = custom_transmogrification_sets.Owner) AND Owner < 190010");
+ #endif
+     }
+ };
+diff --git a/modules/mod-weapon-visual/data/sql/db-characters/base/mod_weapon_visual_effect.sql b/modules/mod-weapon-visual/data/sql/db-characters/base/mod_weapon_visual_effect.sql
+deleted file mode 100644
+index 4a0e307..0000000
+--- a/modules/mod-weapon-visual/data/sql/db-characters/base/mod_weapon_visual_effect.sql
++++ /dev/null
+@@ -1,7 +0,0 @@
+-CREATE TABLE IF NOT EXISTS `mod_weapon_visual_effect` (
+-    `item_guid` INT(10) UNSIGNED NOT NULL,
+-    `enchant_visual_id` INT(10) UNSIGNED NOT NULL,
+-    PRIMARY KEY(`item_guid`)
+-)
+-COMMENT = 'Stores the enchant IDs for the visuals of mod-weapon-visual'
+-DEFAULT CHARSET = utf8 ENGINE = InnoDB;
+diff --git a/modules/mod-weapon-visual/data/sql/db-world/base/creature_template.sql b/modules/mod-weapon-visual/data/sql/db-world/base/creature_template.sql
+deleted file mode 100644
+index d779974..0000000
+--- a/modules/mod-weapon-visual/data/sql/db-world/base/creature_template.sql
++++ /dev/null
+@@ -1,14 +0,0 @@
+-Set 
+-@NpcName = "Eron Glowpride",
+-@NpcSubname = "Weapon Glow Specialist",
+-@NpcEntry = 900000,
+-@NpcDisplayID = 31833,
+-@NpcLevel = 80;
+-
+-DELETE FROM `creature_template` WHERE `entry` = @NpcEntry;
+-INSERT INTO `creature_template` ( `entry`, `name`, `subname`, `minlevel`, `maxlevel`, `faction`, `npcflag`, `speed_walk`, `speed_run`, `scale`, `rank`, `dmgschool`, `BaseAttackTime`, `RangeAttackTime`, `unit_class`, `unit_flags`, `unit_flags2`, `dynamicflags`, `family`, `trainer_type`, `trainer_spell`, `trainer_class`, `trainer_race`, `type`, `type_flags`, `lootid`, `pickpocketloot`, `skinloot`, `PetSpellDataId`, `VehicleId`, `mingold`, `maxgold`, `AIName`, `MovementType`, `HoverHeight`, `HealthModifier`, `ManaModifier`, `ArmorModifier`, `RacialLeader`, `movementId`, `RegenHealth`, `mechanic_immune_mask`, `flags_extra`, `ScriptName`, `VerifiedBuild`) VALUES
+-(@NpcEntry, @NpcName, @NpcSubname, @NpcLevel, @NpcLevel, 35, 1, 1, 1.14286, 1, 1, 0, 2000, 2000, 2, 0, 2048, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, '', 0, 1, 50, 50, 1, 0, 0, 1, 0, 0, 'npc_visualweapon', 12340);
+-
+-DELETE FROM `creature_template_model` WHERE `CreatureID` = @NpcEntry;
+-INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`) VALUES
+-(@NpcEntry, 0, @NpcDisplayID, 1, 1);
+diff --git a/modules/mod-weapon-visual/src/VisualWeapon.cpp b/modules/mod-weapon-visual/src/VisualWeapon.cpp
+index 1183c54..adc1874 100644
+--- a/modules/mod-weapon-visual/src/VisualWeapon.cpp
++++ b/modules/mod-weapon-visual/src/VisualWeapon.cpp
+@@ -135,7 +135,6 @@ public:
+     {
+         AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/PaperDoll/UI-PaperDoll-Slot-MainHand:40:40:-18|tMain-Hand", GOSSIP_SENDER_MAIN, VIS_GOSSIP_MAIN_HAND_ACTION);
+         AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/PaperDoll/UI-PaperDoll-Slot-SecondaryHand:40:40:-18|tOff-Hand", GOSSIP_SENDER_MAIN, VIS_GOSSIP_OFF_HAND_ACTION);
+-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|TInterface/PaperDollInfoFrame/UI-GearManager-Undo:40:40:-18|tNevermind", GOSSIP_SENDER_MAIN, VIS_GOSSIP_CLOSE_ACTION);
+ 
+         player->PlayerTalkClass->SendGossipMenu(VIS_DEFAULT_MESSAGE, creature->GetGUID());
+     }
+@@ -228,12 +227,12 @@ public:
+     }
+ 
+     // if Player has item in bag and re-equip it lets check for enchant
+-    void OnEquip(Player* player, Item* /*item*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
++    void OnPlayerEquip(Player* player, Item* /*item*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
+     {
+         GetVisual(player);
+     }
+ 
+-    void OnLogin(Player* player) override
++    void OnPlayerLogin(Player* player) override
+     {
+         GetVisual(player);
+ 
