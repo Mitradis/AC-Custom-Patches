@@ -21,6 +21,7 @@ bool GainHonorGuardOnGuardKillAnnounce = true;
 bool GainHonorGuardOnEliteKillAnnounce = true;
 bool GainHonorRateEnable = true;
 float GainHonorRate = 1.0;
+int GainAPDivided = 5;
 bool SplitInGroup = false;
 
 class GainHonorGuardConfig : public WorldScript
@@ -54,6 +55,7 @@ public:
         //Honor Rate
         GainHonorRateEnable = sConfigMgr->GetOption<bool>("GainHonorGuard.GainHonorRateEnable", false);
         GainHonorRate = abs(sConfigMgr->GetOption<float>("GainHonorGuard.GainHonorRate", 1.0));
+        GainAPDivided = sConfigMgr->GetOption<int>("GainHonorGuard.APDividerFromHonor", 5);
 
         //Group Split
         SplitInGroup = sConfigMgr->GetOption<bool>("GainHonorGuard.SplitInGroup", false);
@@ -88,12 +90,12 @@ public:
 
     GainHonorGuard() : PlayerScript("GainHonorGuard") {}
 
-    void OnCreatureKill(Player* player, Creature* killed)  //override
+    void OnPlayerCreatureKill(Player* player, Creature* killed)  //override
     {
         RewardHonor(player, killed);
     }
 
-    void OnCreatureKilledByPet(Player* player, Creature* killed) //override
+    void OnPlayerCreatureKilledByPet(Player* player, Creature* killed) //override
     {
         RewardHonor(player, killed);
     }
@@ -151,7 +153,7 @@ public:
 
         // add honor points to player
         player->ModifyHonorPoints(honor);
-        player->ModifyArenaPoints(honor / 5);
+        player->ModifyArenaPoints(honor / GainAPDivided);
 
         player->ApplyModUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, honor, true);
 

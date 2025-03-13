@@ -1,13 +1,13 @@
-#include "ScriptMgr.h"
-#include "Player.h"
+#include "Chat.h"
 #include "Configuration/Config.h"
 #include "GossipDef.h"
-#include "ScriptedGossip.h"
 #include "Language.h"
-#include "Chat.h"
+#include "Opcodes.h"
+#include "Player.h"
+#include "ScriptedGossip.h"
+#include "ScriptMgr.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-#include "Opcodes.h"
 
 bool enable = true;
 uint8 transactionType = 0;
@@ -18,7 +18,9 @@ uint32 money = 10000000;
 class InstanceResetAnnouncer : public PlayerScript
 {
 public:
-    InstanceResetAnnouncer() : PlayerScript("InstanceResetAnnouncer") {}
+    InstanceResetAnnouncer() : PlayerScript("InstanceResetAnnouncer", {
+        PLAYERHOOK_ON_LOGIN
+    }) {}
 
     void OnPlayerLogin(Player* player) override;
 };
@@ -35,7 +37,9 @@ public:
 class InstanceResetWorldConfig : public WorldScript
 {
 public:
-    InstanceResetWorldConfig() : WorldScript("InstanceResetWorldConfig") { }
+    InstanceResetWorldConfig() : WorldScript("InstanceResetWorldConfig", {
+        WORLDHOOK_ON_BEFORE_CONFIG_LOAD
+    }) { }
 
     void OnBeforeConfigLoad(bool /*reload*/) override;
 };

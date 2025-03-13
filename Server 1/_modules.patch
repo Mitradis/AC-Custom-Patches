@@ -37,24 +37,64 @@ index e69de29..0000000
 diff --git a/modules/mod-eluna/sql/world/.gitkeep b/modules/mod-eluna/sql/world/.gitkeep
 deleted file mode 100644
 index e69de29..0000000
+diff --git a/modules/mod-gain-honor-guard/conf/GainHonorGuard.conf.dist b/modules/mod-gain-honor-guard/conf/GainHonorGuard.conf.dist
+index 07049f6..3995fdc 100644
+--- a/modules/mod-gain-honor-guard/conf/GainHonorGuard.conf.dist
++++ b/modules/mod-gain-honor-guard/conf/GainHonorGuard.conf.dist
+@@ -74,6 +74,13 @@ GainHonorGuard.GainHonorRateEnable = 0
+ 
+ GainHonorGuard.GainHonorRate = 1.0
+ 
++#
++#   APDividerFromHonor
++#   Adds arena points (divided) from the amount of honor.
++#       Default : 5
++#
++
++GainHonorGuard.APDividerFromHonor = 5
+ 
+ #
+ #   SplitInGroup
 diff --git a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
-index e921f38..62474c7 100644
+index 5128410..a16c6da 100644
 --- a/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
 +++ b/modules/mod-gain-honor-guard/src/GainHonorGuard.cpp
-@@ -67,7 +67,7 @@ public:
+@@ -21,6 +21,7 @@ bool GainHonorGuardOnGuardKillAnnounce = true;
+ bool GainHonorGuardOnEliteKillAnnounce = true;
+ bool GainHonorRateEnable = true;
+ float GainHonorRate = 1.0;
++int GainAPDivided = 5;
+ bool SplitInGroup = false;
  
-     GainHonorGuardAnnouce() : PlayerScript("GainHonorGuard") {}
+ class GainHonorGuardConfig : public WorldScript
+@@ -54,6 +55,7 @@ public:
+         //Honor Rate
+         GainHonorRateEnable = sConfigMgr->GetOption<bool>("GainHonorGuard.GainHonorRateEnable", false);
+         GainHonorRate = abs(sConfigMgr->GetOption<float>("GainHonorGuard.GainHonorRate", 1.0));
++        GainAPDivided = sConfigMgr->GetOption<int>("GainHonorGuard.APDividerFromHonor", 5);
  
--    void OnLogin(Player* player) override 
-+    void OnPlayerLogin(Player* player) override 
+         //Group Split
+         SplitInGroup = sConfigMgr->GetOption<bool>("GainHonorGuard.SplitInGroup", false);
+@@ -88,12 +90,12 @@ public:
+ 
+     GainHonorGuard() : PlayerScript("GainHonorGuard") {}
+ 
+-    void OnCreatureKill(Player* player, Creature* killed)  //override
++    void OnPlayerCreatureKill(Player* player, Creature* killed)  //override
      {
+         RewardHonor(player, killed);
+     }
  
-         // Announce Module
-@@ -151,6 +151,7 @@ public:
+-    void OnCreatureKilledByPet(Player* player, Creature* killed) //override
++    void OnPlayerCreatureKilledByPet(Player* player, Creature* killed) //override
+     {
+         RewardHonor(player, killed);
+     }
+@@ -151,6 +153,7 @@ public:
  
          // add honor points to player
          player->ModifyHonorPoints(honor);
-+        player->ModifyArenaPoints(honor / 5);
++        player->ModifyArenaPoints(honor / GainAPDivided);
  
          player->ApplyModUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, honor, true);
  
@@ -95,13 +135,17 @@ index e066d37..0000000
 -(@Entry, 'zhTW', @Name, '重置副本', 0),
 -(@entry, 'ruRU', @name, 'Перезапуск подземелий', 0);
 diff --git a/modules/mod-instance-reset/src/instance_reset.cpp b/modules/mod-instance-reset/src/instance_reset.cpp
-index d40babe..0b34647 100644
+index 80a82d8..f3fad7d 100644
 --- a/modules/mod-instance-reset/src/instance_reset.cpp
 +++ b/modules/mod-instance-reset/src/instance_reset.cpp
-@@ -5,25 +5,6 @@
- * Without resorting to the database, since it is a module.
- * And we want to avoid adding information that is not blizzlike.
- */
+@@ -1,30 +1,5 @@
+ #include "instance_reset.h"
+ 
+-/*
+-* This method is used to override the npc_text
+-* Without resorting to the database, since it is a module.
+-* And we want to avoid adding information that is not blizzlike.
+-*/
 -void GossipSetText(Player* player, std::string message, uint32 textID)
 -{
 -    WorldPacket data(SMSG_NPC_TEXT_UPDATE, 100);
@@ -121,10 +165,11 @@ index d40babe..0b34647 100644
 -    }
 -    player->GetSession()->SendPacket(&data);
 -}
- 
+-
  void InstanceResetAnnouncer::OnPlayerLogin(Player* player)
  {
-@@ -152,7 +133,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
+     if (sConfigMgr->GetOption<bool>("instanceReset.Announcer", true))
+@@ -140,7 +115,6 @@ bool InstanceReset::OnGossipHello(Player* player, Creature* creature)
          }
      }
  
@@ -133,12 +178,12 @@ index d40babe..0b34647 100644
      return true;
  }
 diff --git a/modules/mod-instance-reset/src/instance_reset.h b/modules/mod-instance-reset/src/instance_reset.h
-index 10ab5cb..e9de8b4 100644
+index b8e6026..7ab6dfe 100644
 --- a/modules/mod-instance-reset/src/instance_reset.h
 +++ b/modules/mod-instance-reset/src/instance_reset.h
 @@ -9,8 +9,6 @@
+ #include "WorldPacket.h"
  #include "WorldSession.h"
- #include "Opcodes.h"
  
 -void GossipSetText(Player* player, std::string message, uint32 textID);
 -
@@ -146,10 +191,10 @@ index 10ab5cb..e9de8b4 100644
  uint8 transactionType = 0;
  uint16 count = 26;
 diff --git a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp b/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
-index 9ee4acd..0609e6c 100644
+index a07658d..ec48424 100644
 --- a/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
 +++ b/modules/mod-skip-dk-starting-area/src/SkipDK.cpp
-@@ -137,12 +137,12 @@ void Azerothcore_skip_deathknight_HandleSkip(Player* player)
+@@ -135,12 +135,12 @@ void Azerothcore_skip_deathknight_HandleSkip(Player* player)
  
      if (player->GetTeamId() == TEAM_ALLIANCE)
      {
@@ -301,7 +346,7 @@ index 409e357..cc71c4a 100644
  #endif
  
 diff --git a/modules/mod-transmog/src/transmog_scripts.cpp b/modules/mod-transmog/src/transmog_scripts.cpp
-index 8db315d..533d19e 100644
+index 8db315d..c36dfd5 100644
 --- a/modules/mod-transmog/src/transmog_scripts.cpp
 +++ b/modules/mod-transmog/src/transmog_scripts.cpp
 @@ -612,7 +612,7 @@ public:
@@ -325,6 +370,15 @@ index 8db315d..533d19e 100644
                  AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t" + GetLocaleText(locale, "back"), EQUIPMENT_SLOT_END + 4, 0);
                  SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
              } break;
+@@ -698,7 +701,7 @@ public:
+                     return true;
+                 }
+                 PerformTransmogrification(player, action, sender);
+-                CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
++                OnGossipHello(player, creature);
+             } break;
+         }
+         return true;
 @@ -727,7 +730,7 @@ public:
              return true;
          }
@@ -411,7 +465,7 @@ index d779974..0000000
 -INSERT INTO `creature_template_model` (`CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`, `Probability`) VALUES
 -(@NpcEntry, 0, @NpcDisplayID, 1, 1);
 diff --git a/modules/mod-weapon-visual/src/VisualWeapon.cpp b/modules/mod-weapon-visual/src/VisualWeapon.cpp
-index 1183c54..adc1874 100644
+index b461acb..adc1874 100644
 --- a/modules/mod-weapon-visual/src/VisualWeapon.cpp
 +++ b/modules/mod-weapon-visual/src/VisualWeapon.cpp
 @@ -135,7 +135,6 @@ public:
@@ -422,18 +476,3 @@ index 1183c54..adc1874 100644
  
          player->PlayerTalkClass->SendGossipMenu(VIS_DEFAULT_MESSAGE, creature->GetGUID());
      }
-@@ -228,12 +227,12 @@ public:
-     }
- 
-     // if Player has item in bag and re-equip it lets check for enchant
--    void OnEquip(Player* player, Item* /*item*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
-+    void OnPlayerEquip(Player* player, Item* /*item*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
-     {
-         GetVisual(player);
-     }
- 
--    void OnLogin(Player* player) override
-+    void OnPlayerLogin(Player* player) override
-     {
-         GetVisual(player);
- 

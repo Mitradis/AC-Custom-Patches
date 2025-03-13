@@ -701,7 +701,7 @@ public:
                     return true;
                 }
                 PerformTransmogrification(player, action, sender);
-                CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
+                OnGossipHello(player, creature);
             } break;
         }
         return true;

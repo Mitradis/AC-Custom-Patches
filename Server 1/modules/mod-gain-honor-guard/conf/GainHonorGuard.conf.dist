@@ -74,6 +74,13 @@ GainHonorGuard.GainHonorRateEnable = 0
 
 GainHonorGuard.GainHonorRate = 1.0
 
+#
+#   APDividerFromHonor
+#   Adds arena points (divided) from the amount of honor.
+#       Default : 5
+#
+
+GainHonorGuard.APDividerFromHonor = 5
 
 #
 #   SplitInGroup
